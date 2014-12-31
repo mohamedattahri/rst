@@ -92,7 +92,7 @@ At this point, our service only allows `GET` requests on a resource called `Pers
 It negotiates the right encoding format based on the content of the `Accept` header in the request, calls the appropriate marshaler, and inserts the result in a response with the right status code and headers.
 
 Media MIME type    |	Encoder
--                  |    -
+-------------------|-------------
 application/json   |	json
 text/javascript    |	json
 application/xml    |	xml
