@@ -306,14 +306,14 @@ type User struct{}
 // assuming User implements rst.Resource
 
 // MarshalREST returns the profile picture of the user if the Accept header
-// of the request indicates "image/png", and relies on the rest.Marshal
+// of the request indicates "image/png", and relies on the rst.Marshal
 // method to handle the other cases.
 func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
-	accept := ParseAccept(r.Header.Get("Accept"))
+	accept := rst.ParseAccept(r.Header.Get("Accept"))
 	if accept.Negotiate(png) == png {
 		b, err := ioutil.ReadFile("path/of/user/profile/picture.png")
 		return png, b, err
 	}
-	return rest.Marshal(rest.Resource(u), r)
+	return rst.Marshal(rst.Resource(u), r)
 }
 ```
