@@ -41,7 +41,7 @@ func (p *Person) ETag() string {
 // This value will help set the Expires header and
 // improve the cacheability of this resource.
 func (p *Person) TTL() time.Duration {
-    return 10 * time.Duration
+    return 10 * time.Second
 }
 
 ```
