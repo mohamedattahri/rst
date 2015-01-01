@@ -135,7 +135,7 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 		b           []byte
 		err         error
 	)
-	contentType, b, err = marshalResource(resource, r)
+	contentType, b, err = Marshal(resource, r)
 	if err != nil {
 		writeError(err, w, r)
 		return

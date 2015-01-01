@@ -44,7 +44,7 @@ func TestMarshalXMLStruct(t *testing.T) {
 }
 
 // Checking that marshalXML inserts the header and the envelope around arrays
-// marshaled with xml.Marshal
+// marshaled with xml.MarshalResource
 func TestMarshalXMLArray(t *testing.T) {
 	people := testPeople[:10]
 
@@ -88,7 +88,7 @@ func TestMarshal(t *testing.T) {
 	}
 
 	var test = func(contentType, expecting string) {
-		ct, _, err := Marshal(testPeople[0], generate(contentType))
+		ct, _, err := MarshalResource(testPeople[0], generate(contentType))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -114,7 +114,7 @@ func TestMarshal(t *testing.T) {
 	test("image/png,*/*;q=0.5,text/plain;q=0.8,application/xml,application/xhtml+xml,text/html;q=0.9", "application/xml")
 
 	// Errors
-	_, _, err := Marshal(testPeople[0], generate("image/png"))
+	_, _, err := MarshalResource(testPeople[0], generate("image/png"))
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func (c *customPerson) MarshalREST(r *http.Request) (string, []byte, error) {
 }
 func TestMarshalResource(t *testing.T) {
 	c := &customPerson{}
-	ct, b, err := marshalResource(c, nil)
+	ct, b, err := Marshal(c, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

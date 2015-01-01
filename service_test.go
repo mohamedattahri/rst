@@ -55,7 +55,7 @@ func (e *employer) MarshalREST(r *http.Request) (string, []byte, error) {
 	if accept.Negotiate(testContentType) == testContentType {
 		return testContentType, testCannedBytes, nil
 	}
-	return Marshal(e, r)
+	return MarshalResource(e, r)
 }
 
 type person struct {
@@ -88,7 +88,7 @@ func (p *person) MarshalREST(r *http.Request) (string, []byte, error) {
 	if accept.Negotiate(testContentType) == testContentType {
 		return testContentType, testCannedBytes, nil
 	}
-	return Marshal(p, r)
+	return MarshalResource(p, r)
 }
 
 type resourceCollection []Resource
@@ -124,7 +124,7 @@ func (c resourceCollection) MarshalREST(r *http.Request) (string, []byte, error)
 	if accept.Negotiate(testContentType) == testContentType {
 		return testContentType, testCannedBytes, nil
 	}
-	return Marshal(c, r)
+	return MarshalResource(c, r)
 }
 
 type echoResource struct {

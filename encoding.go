@@ -39,7 +39,7 @@ Example:
 			b, err := ioutil.ReadFile("path/of/user/profile/picture.png")
 			return png, b, err
 		}
-		return rest.Marshal(rest.Resource(u), r)
+		return rest.MarshalResource(rest.Resource(u), r)
 	}
 */
 type Marshaler interface {
@@ -48,15 +48,15 @@ type Marshaler interface {
 	MarshalREST(*http.Request) (contentType string, data []byte, err error)
 }
 
-// Marshal negotiates contentType based on the Accept header in r, and returns
+// MarshalResource negotiates contentType based on the Accept header in r, and returns
 // the encoded version of resource as an array of bytes.
 //
-// Marshal can encode a resource in JSON and XML, as well as text using either
+// MarshalResource can encode a resource in JSON and XML, as well as text using either
 // encoding.TextMarshaler or fmt.Stringer.
 //
-// Marshal's XML marshaling will always return a valid XML document with a
+// MarshalResource's XML marshaling will always return a valid XML document with a
 // header and a root object, which is not the case for the encoding/xml package.
-func Marshal(resource interface{}, r *http.Request) (contentType string, encoded []byte, err error) {
+func MarshalResource(resource interface{}, r *http.Request) (contentType string, encoded []byte, err error) {
 	accept := ParseAccept(r.Header.Get("Accept"))
 	if len(accept) == 0 {
 		accept = append(accept, AcceptClause{
@@ -112,10 +112,15 @@ func marshalXML(resource interface{}) ([]byte, error) {
 	return b, err
 }
 
-func marshalResource(resource interface{}, r *http.Request) (string, []byte, error) {
+// Marshal negotiates contentType based on the Accept header in r, and returns
+// the encoded version of resource as an array of bytes.
+//
+// Marshal uses resource.MarshalREST if resource implements the Marshaler
+// interface, or MarshalResource method if it doesn't.
+func Marshal(resource interface{}, r *http.Request) (contentType string, encoded []byte, err error) {
 	if marshaler, implemented := resource.(Marshaler); implemented {
 		return marshaler.MarshalREST(r)
 	}
 
-	return Marshal(resource, r)
+	return MarshalResource(resource, r)
 }

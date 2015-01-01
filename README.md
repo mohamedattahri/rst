@@ -314,6 +314,6 @@ func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
 		b, err := ioutil.ReadFile("path/of/user/profile/picture.png")
 		return png, b, err
 	}
-	return rest.Marshal(rest.Resource(u), r)
+	return rest.MarshalResource(rest.Resource(u), r)
 }
 ```

@@ -134,12 +134,12 @@ func (e *Error) MarshalREST(r *http.Request) (string, []byte, error) {
 		)
 		return "text/html", []byte(html), nil
 	}
-	return Marshal(e, r)
+	return MarshalResource(e, r)
 }
 
 // ServeHTTP implements the http.Handler interface.
 func (e *Error) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ct, b, err := marshalResource(e, r)
+	ct, b, err := Marshal(e, r)
 	if err != nil {
 		ct = "text/plain; charset=utf-8"
 		b = []byte(e.String())
