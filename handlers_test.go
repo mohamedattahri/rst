@@ -64,7 +64,7 @@ func TestConflicts(t *testing.T) {
 }
 
 func TestAllowedMethods(t *testing.T) {
-	supported := allowedMethods(&allInterfaces{})
+	supported := AllowedMethods(&allInterfaces{})
 	expected := []string{Head, Get, Patch, Put, Post, Delete}
 	for i, s := range supported {
 		if s != expected[i] {

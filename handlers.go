@@ -401,7 +401,7 @@ func optionsHandler(endpoint Endpoint) http.Handler {
 			return
 		}
 
-		w.Header().Set("Allow", strings.Join(allowedMethods(endpoint), ", "))
+		w.Header().Set("Allow", strings.Join(AllowedMethods(endpoint), ", "))
 		w.Header().Set("Content-Type", strings.Join(alternatives, ";"))
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -420,7 +420,7 @@ type endpointHandler struct {
 func (h *endpointHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	methodHandler := getMethodHandler(h.endpoint, r.Method, r.Header)
 	if methodHandler == nil {
-		if allowed := allowedMethods(h.endpoint); len(allowed) > 0 {
+		if allowed := AllowedMethods(h.endpoint); len(allowed) > 0 {
 			methodHandler = MethodNotAllowed(r.Method, allowed)
 		} else {
 			methodHandler = NotFound()
@@ -459,8 +459,8 @@ func getMethodHandler(endpoint Endpoint, method string, header http.Header) http
 	return nil
 }
 
-// allowedMethods returns the list of HTTP methods supported by this endpoint.
-func allowedMethods(endpoint Endpoint) (methods []string) {
+// AllowedMethods returns the list of HTTP methods allowed by this endpoint.
+func AllowedMethods(endpoint Endpoint) (methods []string) {
 	for _, method := range []string{Head, Get, Patch, Put, Post, Delete} {
 		if getMethodHandler(endpoint, method, nil) != nil {
 			methods = append(methods, method)

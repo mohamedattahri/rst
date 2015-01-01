@@ -132,7 +132,7 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	if req.Method != "" && resp.Methods != nil {
 		var methods []string
 		if len(resp.Methods) == 0 {
-			methods = allowedMethods(h.endpoint)
+			methods = AllowedMethods(h.endpoint)
 		} else {
 			methods = resp.Methods
 		}
