@@ -71,7 +71,7 @@ func (ep *PersonEP) Get(vars rst.RouteVars, r *http.Request) (rst.Resource, erro
 Routing of requests in `rst` is powered by [Gorilla mux](https://github.com/gorilla/mux). Only URL patterns are available for now. Optional regular expressions are supported.
 
 ```go
-mux := rst.NewRESTMux()
+mux := rst.NewMux()
 
 // Headers set in mux are added to all responses
 mux.Header().Set("Server", "Awesome Service Software 1.0")

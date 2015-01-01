@@ -110,17 +110,17 @@ func delVars(r *http.Request) {
 	context.Clear(r)
 }
 
-// RESTMux is an HTTP request multiplexer. It matches the URL of each incoming
+// Mux is an HTTP request multiplexer. It matches the URL of each incoming
 // requests against a list of registered REST endpoints.
-type RESTMux struct {
+type Mux struct {
 	header http.Header
 	ac     *AccessControlResponse
 	m      *gorillaMux.Router
 }
 
-// NewRESTMux initializes a new REST multiplexer.
-func NewRESTMux() *RESTMux {
-	s := &RESTMux{
+// NewMux initializes a new REST multiplexer.
+func NewMux() *Mux {
+	s := &Mux{
 		header: make(http.Header),
 		m:      gorillaMux.NewRouter(),
 	}
@@ -129,7 +129,7 @@ func NewRESTMux() *RESTMux {
 
 // Header contains the headers that will automatically be set in all responses
 // served from this mux.
-func (s *RESTMux) Header() http.Header {
+func (s *Mux) Header() http.Header {
 	return s.header
 }
 
@@ -143,11 +143,11 @@ with the response to an HTTP OPTIONS preflight request.
 The ac parameter can be DefaultAccessControl, PermissiveAccessControl, or a
 custom defined AccessControlResponse struct. A nil value will disable support.
 */
-func (s *RESTMux) SetCORSPolicy(ac *AccessControlResponse) {
+func (s *Mux) SetCORSPolicy(ac *AccessControlResponse) {
 	s.ac = ac
 }
 
-func (s *RESTMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Custom headers are written no matter what.
 	for key, values := range s.header {
 		for i, value := range values {
@@ -178,17 +178,17 @@ func (s *RESTMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HandleEndpoint registers the endpoint for the given pattern.
 // It's a shorthand for:
 // 	s.Handle(pattern, EndpointHandler(endpoint))
-func (s *RESTMux) HandleEndpoint(pattern string, endpoint Endpoint) {
+func (s *Mux) HandleEndpoint(pattern string, endpoint Endpoint) {
 	s.Handle(pattern, EndpointHandler(endpoint))
 }
 
 // Handle registers the handler function for the given pattern.
-func (s *RESTMux) Handle(pattern string, handler http.Handler) {
+func (s *Mux) Handle(pattern string, handler http.Handler) {
 	s.m.Handle(pattern, handler)
 }
 
 // match returns the route
-func (s *RESTMux) match(r *http.Request) *gorillaMux.RouteMatch {
+func (s *Mux) match(r *http.Request) *gorillaMux.RouteMatch {
 	var match gorillaMux.RouteMatch
 	if !s.m.Match(r, &match) {
 		return nil

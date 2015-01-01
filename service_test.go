@@ -15,7 +15,7 @@ import (
 var (
 	testHost                     = "127.0.0.1:55839"
 	testServerAddr               = "http://" + testHost
-	testMux                      *RESTMux
+	testMux                      *Mux
 	testMBText                   []byte
 	testSafeURL                  string
 	testEchoURL                  string
@@ -259,7 +259,7 @@ func TestMain(m *testing.M) {
 		testPeopleResourceCollection = append(testPeopleResourceCollection, Resource(p))
 	}
 
-	testMux = NewRESTMux()
+	testMux = NewMux()
 	testMux.Handle("/echo", EndpointHandler(&echoEndpoint{}))
 	testMux.Handle("/people", EndpointHandler(&peopleCollection{}))
 	testMux.Handle("/people/{id}", EndpointHandler(&personResource{}))
