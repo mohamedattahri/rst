@@ -41,7 +41,7 @@ func (p *Person) ETag() string {
 // This value will help set the Expires header and
 // improve the cacheability of this resource.
 func (p *Person) TTL() time.Duration {
-    return 10 * time.Duration
+    return 10 * time.Second
 }
 
 ```
@@ -92,7 +92,7 @@ At this point, our service only allows `GET` requests on a resource called `Pers
 It negotiates the right encoding format based on the content of the `Accept` header in the request, calls the appropriate marshaler, and inserts the result in a response with the right status code and headers.
 
 Media MIME type    |	Encoder
--                  |    -
+-------------------|-------------
 application/json   |	json
 text/javascript    |	json
 application/xml    |	xml
@@ -306,14 +306,18 @@ type User struct{}
 // assuming User implements rst.Resource
 
 // MarshalREST returns the profile picture of the user if the Accept header
-// of the request indicates "image/png", and relies on the rest.Marshal
+// of the request indicates "image/png", and relies on the rst.Marshal
 // method to handle the other cases.
 func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
-	accept := ParseAccept(r.Header.Get("Accept"))
+	accept := rst.ParseAccept(r.Header.Get("Accept"))
 	if accept.Negotiate(png) == png {
 		b, err := ioutil.ReadFile("path/of/user/profile/picture.png")
 		return png, b, err
 	}
+<<<<<<< HEAD
 	return rest.MarshalResource(rest.Resource(u), r)
+=======
+	return rst.Marshal(rst.Resource(u), r)
+>>>>>>> FETCH_HEAD
 }
 ```
