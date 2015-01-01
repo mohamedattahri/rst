@@ -1,7 +1,94 @@
 // Copyright (c) 2014, Mohamed Attahri
 
-// Package rst implements tools and methods to expose resources in a RESTFul
-// web service.
+/*
+Package rst implements tools and methods to expose resources in a RESTFul
+web service.
+
+The idea behind rst is to have endpoints and resources implementing interfaces to add features.
+
+Endpoints can implement Getter, Poster, Patcher, Putter or Deleter to respectively allow the HEAD/GET, POST, PATCH, PUT, and DELETE HTTP methods.
+
+Resources can implement Ranger to support partial GET requests, or Marshaler to customize the process with which they are encoded.
+
+With these interfaces, the complexity behind dealing with all the headers and status codes of the HTTP protocol is abstracted to let you focus on returning a resource or an error.
+
+Resources
+
+A resource must implement the Resource interface. Here's a basic example:
+
+	type Person struct {
+		ID string
+		Name string
+		ModifiedDate time.Time `json:"-" xml:"-"`
+	}
+
+	// This will be helpful for conditional GETs
+	// and to detect conflicts before PATCHs for example.
+	func (p *Person) LastModified() time.Time {
+		return p.ModifiedDate
+	}
+
+	// An ETag inspired by Facebook.
+	func (p *Person) ETag() string {
+		return fmt.Sprintf("%d-%s", p.LastModified().Unix(), p.ID)
+	}
+
+	// This value will help set the Expires header and
+	// improve the cacheability of this resource.
+	func (p *Person) TTL() time.Duration {
+		return 10 * time.Second
+	}
+
+Endpoints
+
+An endpoint is an access point to a resource in your service.
+
+In the following example, PersonEP implements Getter and is therefore able to handle GET requests.
+
+	type PersonEP struct {}
+
+	func (ep *PersonEP) Get(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
+		resource := database.Find(vars.Get("id"))
+		if resource == nil {
+			return nil, rst.NotFound()
+		}
+		return resource, nil
+	}
+
+Get uses the id variable extracted from the URL to load a resource from the database, or return a 404 Not Found error.
+
+Routing
+
+Routing of requests in rst is powered by Gorilla mux (https://github.com/gorilla/mux). Only URL patterns are available for now. Optional regular expressions are supported.
+
+	mux := rst.NewMux()
+
+	// Headers set in mux are added to all responses
+	mux.Header().Set("Server", "Awesome Service Software 1.0")
+	mux.Header().Set("X-Powered-By", "rst")
+
+	mux.Handle("/people/{id:\\d+}", rst.EndpointHandler(&PersonEP{}))
+
+	http.ListenAndServe(":8080", mux)
+
+At this point, our service only allows `GET` requests on a resource called `Person`.
+
+Encoding
+
+rst supports JSON, XML and text encoding of resources using the encoders in Go's standard library.
+
+It negotiates the right encoding format based on the content of the Accept header in the request, calls the appropriate marshaler, and inserts the result in a response with the right status code and headers.
+
+You can implement the Marshaler interface if you want to add support for another format, or for more control over the encoding process of a specific resource.
+
+Compression
+
+rst compresses the payload of responses using the supported algorithm detected in the request's Accept-Encoding header.
+
+Payloads under CompressionThreshold bytes are not compressed.
+
+Both Gzip and Flate are supported.
+*/
 package rst
 
 import (

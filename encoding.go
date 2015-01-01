@@ -31,20 +31,22 @@ Example:
 	// assuming User implements rst.Resource
 
 	// MarshalREST returns the profile picture of the user if the Accept header
-	// of the request indicates "image/png", and relies on the rest.Marshal
-	// method to handle the other cases.
+	// of the request indicates "image/png", and relies on rst.MarshalResource
+	// to handle the other cases.
 	func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
 		accept := ParseAccept(r.Header.Get("Accept"))
 		if accept.Negotiate(png) == png {
 			b, err := ioutil.ReadFile("path/of/user/profile/picture.png")
 			return png, b, err
 		}
-		return rest.MarshalResource(rest.Resource(u), r)
+		return rst.MarshalResource(u, r)
 	}
 */
 type Marshaler interface {
 	// MarshalREST must return the chosen encoding media MIME type and the
 	// encoded resource as an array of bytes, or an error.
+	//
+	// MarshalREST is to rst.Marshal what MarshalJSON is to json.Marshal.
 	MarshalREST(*http.Request) (contentType string, data []byte, err error)
 }
 
@@ -56,6 +58,8 @@ type Marshaler interface {
 //
 // MarshalResource's XML marshaling will always return a valid XML document with a
 // header and a root object, which is not the case for the encoding/xml package.
+//
+// MarshalResource can be called from Marshaler.MarshalREST on the same resource safely.
 func MarshalResource(resource interface{}, r *http.Request) (contentType string, encoded []byte, err error) {
 	accept := ParseAccept(r.Header.Get("Accept"))
 	if len(accept) == 0 {

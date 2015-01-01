@@ -8,7 +8,7 @@
 
 The idea behind `rst` is to have endpoints and resources implementing interfaces to add features.
 
-Endpoints can implement [Getter](#getter), [Poster](#poster), [Patcher](#patcher), [Putter](#putter) or [Deleter](#deleter) to respectively allow the `GET`, `PATCH`, `POST`, `PUT`, and `DELETE` HTTP methods.
+Endpoints can implement [Getter](#getter), [Poster](#poster), [Patcher](#patcher), [Putter](#putter) or [Deleter](#deleter) to respectively allow the `HEAD`/`GET`, `POST`, `PATCH`, `PUT`, and `DELETE` HTTP methods.
 
 Resources can implement [Ranger](#ranger) to support partial `GET` requests, or [Marshaler](#marshaler) to customize the process with which they are encoded.
 
@@ -16,9 +16,7 @@ With these interfaces, the complexity behind dealing with all the headers and st
 
 ### Resources
 
-A resource must implement the `Resource` interface.
-
-Here's a basic example:
+A resource must implement the `Resource` interface. Here's a basic example:
 
 ```go
 type Person struct {
@@ -43,7 +41,6 @@ func (p *Person) ETag() string {
 func (p *Person) TTL() time.Duration {
     return 10 * time.Second
 }
-
 ```
 
 ### Endpoints
@@ -88,7 +85,6 @@ At this point, our service only allows `GET` requests on a resource called `Pers
 
 `rst` supports JSON, XML and text encoding of resources using the encoders in Go's standard library.
 
-
 It negotiates the right encoding format based on the content of the `Accept` header in the request, calls the appropriate marshaler, and inserts the result in a response with the right status code and headers.
 
 Media MIME type    |	Encoder
@@ -114,7 +110,7 @@ Both Gzip and Flate are supported.
 
 ### Options
 
-`OPTIONS` requests are implicitely supported by all endpoints
+`OPTIONS` requests are implicitly supported by all endpoints.
 
 ### Cache
 
@@ -122,16 +118,15 @@ The `ETag`, `Last-Modified` and `Vary` headers are automatically set.
 
 `rst` responds with `304 NOT MODIFIED` when an appropriate `If-Modified-Since` or `If-None-Match` header is found in the request.
 
-The `Expires` header is also automatically inserted with the duration returned by `resource.TTL()`.
+The `Expires` header is also automatically inserted with the duration returned by `Resource.TTL()`.
 
 ### Partial Gets
 
 A resource can implement the [Ranger](#ranger) interface to gain the ability to return partial responses with status code `206 PARTIAL CONTENT` and `Content-Range` header automatically inserted.
 
-Now that `Ranger` is implemented, the `Range` method will be called when a valid `Range` header is found in an incoming `GET` request.
+`Ranger.Range` method will be called when a valid `Range` header is found in an incoming `GET` request.
 
 Note that the `If-Range` conditional header is supported as well.
-
 
 ### CORS
 
@@ -145,7 +140,7 @@ mux.SetCORSPolicy(rst.PermissiveAccessControl)
 
 Support can be disabled by passing `nil`.
 
-Preflighted requests are also supported. However, you can customize the responses returned by the preflight `OPTIONS` requests by implementing the `Preflighter` interface in your endpoint.
+Preflighted requests are also supported. However, you can customize the responses returned by preflight `OPTIONS` requests if you implement the `Preflighter` interface in your endpoint.
 
 ## Interfaces
 
@@ -153,7 +148,7 @@ Preflighted requests are also supported. However, you can customize the response
 
 #### <a id="getter"></a>Getter
 
-Getter allows `GET` and `HEAD` requests for a method.
+Getter allows `GET` and `HEAD` method requests.
 
 ```go
 func (ep *endpoint) Get(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
@@ -171,12 +166,12 @@ Poster allows an endpoint to handle `POST` requests.
 
 ```go
 func (ep *endpoint) Post(vars rst.RouteVars, r *http.Request) (rst.Resource, string, error) {
-	resource, err := NewResourceFromRequest(r)
+	resource, err := newResourceFromRequest(r)
 	if err != nil {
 		return nil, "", err
 	}
 	uri := "https://example.com/resource/" + resource.ID
-   return resource, uri, nil
+    return resource, uri, nil
 }
 ```
 
@@ -244,7 +239,7 @@ func (ep *endpoint) Delete(vars rst.RouteVars, r *http.Request) error {
 
 #### <a id="preflighter"></a>Preflighter
 
-Preflighter allows you to customize the CORS headers that will be returned to an `OPTIONS` preflight request sent by user agents before the actual request is made.
+Preflighter allows you to customize the CORS headers returned to an `OPTIONS` preflight request sent by user agents before the actual request.
 
 For the endpoint in this example, different policies are implemented for different times of the day.
 
@@ -263,7 +258,6 @@ func (e *endpoint) Preflight(req *rst.AccessControlRequest, r *http.Request) *rs
 	}
 }
 ```
-
 
 ### Resources
 
@@ -306,8 +300,8 @@ type User struct{}
 // assuming User implements rst.Resource
 
 // MarshalREST returns the profile picture of the user if the Accept header
-// of the request indicates "image/png", and relies on the rst.Marshal
-// method to handle the other cases.
+// of the request indicates "image/png", and relies on rst.MarshalResource
+// to handle the other cases.
 func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
 	accept := rst.ParseAccept(r.Header.Get("Accept"))
 	if accept.Negotiate(png) == png {
@@ -315,6 +309,6 @@ func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
 		return png, b, err
 	}
 
-	return rest.MarshalResource(rest.Resource(u), r)
+	return rst.MarshalResource(u, r)
 }
 ```
