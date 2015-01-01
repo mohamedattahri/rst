@@ -314,10 +314,7 @@ func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
 		b, err := ioutil.ReadFile("path/of/user/profile/picture.png")
 		return png, b, err
 	}
-<<<<<<< HEAD
+
 	return rest.MarshalResource(rest.Resource(u), r)
-=======
-	return rst.Marshal(rst.Resource(u), r)
->>>>>>> FETCH_HEAD
 }
 ```
