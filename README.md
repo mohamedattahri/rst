@@ -170,7 +170,7 @@ func (ep *endpoint) Get(vars rst.RouteVars, r *http.Request) (rst.Resource, erro
 Poster allows an endpoint to handle `POST` requests.
 
 ```go
-func (ep *endpoint) Get(vars rst.RouteVars, r *http.Request) (rst.Resource, string, error) {
+func (ep *endpoint) Post(vars rst.RouteVars, r *http.Request) (rst.Resource, string, error) {
 	resource, err := NewResourceFromRequest(r)
 	if err != nil {
 		return nil, "", err

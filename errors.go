@@ -30,7 +30,7 @@ func NotFound() *Error {
 }
 
 // MethodNotAllowed is returned when the method specified in a request is
-// not allowed by the resouced identified by the request-URI.
+// not allowed by the resource identified by the request-URI.
 func MethodNotAllowed(forbidden string, allowed []string) *Error {
 	methods := strings.Join(allowed, ", ")
 	err := NewError(

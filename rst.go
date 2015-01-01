@@ -110,7 +110,8 @@ func delVars(r *http.Request) {
 	context.Clear(r)
 }
 
-// RESTMux represents a endpoint in an RESTful API.
+// RESTMux is an HTTP request multiplexer. It matches the URL of each incoming
+// requests against a list of registered REST endpoints.
 type RESTMux struct {
 	header http.Header
 	ac     *AccessControlResponse
