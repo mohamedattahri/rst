@@ -257,7 +257,7 @@ Patcher is implemented by endpoints allowing the PATCH method.
 
 	func (ep *endpoint) Patch(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
 		resource := database.Find(vars.Get("id"))
-		if resource != nil {
+		if resource == nil {
 			return nil, rst.NotFound()
 		}
 
@@ -270,8 +270,7 @@ Patcher is implemented by endpoints allowing the PATCH method.
 			return nil, rst.PreconditionFailed()
 		}
 
-		// Read r.Body and an apply changes to resource
-		// then return it
+		// Read r.Body, apply changes to resource, then return it
 		return resource, nil
 	}
 */
@@ -301,7 +300,7 @@ Putter is implemented by endpoints allowing the PUT method.
 
 	func (ep *endpoint) Put(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
 		resource := database.Find(vars.Get("id"))
-		if resource != nil {
+		if resource == nil {
 			return nil, rst.NotFound()
 		}
 
@@ -310,8 +309,7 @@ Putter is implemented by endpoints allowing the PUT method.
 			return nil, rst.PreconditionFailed()
 		}
 
-		// Read r.Body and an apply changes to resource
-		// then return it
+		// Read r.Body, apply changes to resource, then return it
 		return resource, nil
 	}
 */
@@ -365,12 +363,11 @@ func (f postFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if location != "" {
+		// TODO: make sure the URI is a fully qualified URL
 		w.Header().Add("Location", location)
 	}
 
 	if resource == nil {
-		// TODO: make sure the URI is a fully qualified URL
-
 		w.WriteHeader(http.StatusCreated)
 		return
 	}
@@ -459,9 +456,11 @@ func getMethodHandler(endpoint Endpoint, method string, header http.Header) http
 	return nil
 }
 
+var supportedMethods = []string{Head, Get, Patch, Put, Post, Delete}
+
 // AllowedMethods returns the list of HTTP methods allowed by this endpoint.
 func AllowedMethods(endpoint Endpoint) (methods []string) {
-	for _, method := range []string{Head, Get, Patch, Put, Post, Delete} {
+	for _, method := range supportedMethods {
 		if getMethodHandler(endpoint, method, nil) != nil {
 			methods = append(methods, method)
 		}
