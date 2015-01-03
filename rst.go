@@ -1,16 +1,25 @@
 // Copyright (c) 2014, Mohamed Attahri
 
+// rst relies on esc (https://github.com/mjibson/esc) to embed static resources
+// with go generate (requires go 1.4 or more recent).
+//go:generate esc -pkg=rst -o=assets.go ./assets
+
 /*
 Package rst implements tools and methods to expose resources in a RESTFul
 web service.
 
-The idea behind rst is to have endpoints and resources implementing interfaces to add features.
+The idea behind rst is to have endpoints and resources implement interfaces to
+add features.
 
-Endpoints can implement Getter, Poster, Patcher, Putter or Deleter to respectively allow the HEAD/GET, POST, PATCH, PUT, and DELETE HTTP methods.
+Endpoints can implement Getter, Poster, Patcher, Putter or Deleter to
+respectively allow the HEAD/GET, POST, PATCH, PUT, and DELETE HTTP methods.
 
-Resources can implement Ranger to support partial GET requests, or Marshaler to customize the process with which they are encoded.
+Resources can implement Ranger to support partial GET requests, or Marshaler to
+customize the process with which they are encoded.
 
-With these interfaces, the complexity behind dealing with all the headers and status codes of the HTTP protocol is abstracted to let you focus on returning a resource or an error.
+With these interfaces, the complexity behind dealing with all the headers and
+status codes of the HTTP protocol is abstracted to let you focus on returning a
+resource or an error.
 
 Resources
 
@@ -43,7 +52,8 @@ Endpoints
 
 An endpoint is an access point to a resource in your service.
 
-In the following example, PersonEP implements Getter and is therefore able to handle GET requests.
+In the following example, PersonEP implements Getter and is therefore able to
+handle GET requests.
 
 	type PersonEP struct {}
 
@@ -55,13 +65,17 @@ In the following example, PersonEP implements Getter and is therefore able to ha
 		return resource, nil
 	}
 
-Get uses the id variable extracted from the URL to load a resource from the database, or return a 404 Not Found error.
+Get uses the id variable extracted from the URL to load a resource from the
+database, or return a 404 Not Found error.
 
 Routing
 
-Routing of requests in rst is powered by Gorilla mux (https://github.com/gorilla/mux). Only URL patterns are available for now. Optional regular expressions are supported.
+Routing of requests in rst is powered by Gorilla mux
+(https://github.com/gorilla/mux). Only URL patterns are available for now.
+Optional regular expressions are supported.
 
 	mux := rst.NewMux()
+	mux.Debug = true // make sure this is switched back to false before production
 
 	// Headers set in mux are added to all responses
 	mux.Header().Set("Server", "Awesome Service Software 1.0")
@@ -71,23 +85,66 @@ Routing of requests in rst is powered by Gorilla mux (https://github.com/gorilla
 
 	http.ListenAndServe(":8080", mux)
 
-At this point, our service only allows `GET` requests on a resource called `Person`.
-
 Encoding
 
-rst supports JSON, XML and text encoding of resources using the encoders in Go's standard library.
+rst supports JSON, XML and text encoding of resources using the encoders in Go's
+standard library.
 
-It negotiates the right encoding format based on the content of the Accept header in the request, calls the appropriate marshaler, and inserts the result in a response with the right status code and headers.
+It negotiates the right encoding format based on the content of the Accept
+header in the request, calls the appropriate marshaler, and inserts the result
+in a response with the right status code and headers.
 
-You can implement the Marshaler interface if you want to add support for another format, or for more control over the encoding process of a specific resource.
+You can implement the Marshaler interface if you want to add support for another
+format, or for more control over the encoding process of a specific resource.
 
 Compression
 
-rst compresses the payload of responses using the supported algorithm detected in the request's Accept-Encoding header.
+rst compresses the payload of responses using the supported algorithm detecte
+in the request's Accept-Encoding header.
 
 Payloads under CompressionThreshold bytes are not compressed.
 
 Both Gzip and Flate are supported.
+
+Options
+
+OPTIONS requests are implicitly supported by all endpoints.
+
+Cache
+
+The ETag, Last-Modified and Vary headers are automatically set.
+
+rst responds with 304 NOT MODIFIED when an appropriate If-Modified-Since or
+If-None-Match header is found in the request.
+
+The Expires header is also automatically inserted with the duration returned by
+Resource.TTL().
+
+Partial Gets
+
+A resource can implement the Ranger interface to gain the ability to return
+partial responses with status code 206 PARTIAL CONTENT and Content-Range
+header automatically inserted.
+
+Ranger.Range method will be called when a valid Range header is found in an
+incoming GET request.
+
+Note that the If-Range conditional header is supported as well.
+
+CORS
+
+rst can add the headers required to serve cross-origin (CORS) requests for you.
+
+You can choose between two provided policies (DefaultAccessControl and
+PermissiveAccessControl), or define your own.
+
+	mux.SetCORSPolicy(rst.PermissiveAccessControl)
+
+Support can be disabled by passing nil.
+
+Preflighted requests are also supported. However, you can customize the
+responses returned by preflight OPTIONS requests if you implement the
+Preflighter interface in your endpoint.
 */
 package rst
 
@@ -102,6 +159,7 @@ import (
 	gorillaMux "github.com/gorilla/mux"
 )
 
+// rfc1123 with GMT
 const rfc1123 = "Mon, 02 Jan 2006 15:04:05 GMT"
 
 // Common HTTP methods.
@@ -200,6 +258,7 @@ func delVars(r *http.Request) {
 // Mux is an HTTP request multiplexer. It matches the URL of each incoming
 // requests against a list of registered REST endpoints.
 type Mux struct {
+	Debug  bool // Set to true to display stack traces and debug info in errors.
 	header http.Header
 	ac     *AccessControlResponse
 	m      *gorillaMux.Router
@@ -235,6 +294,13 @@ func (s *Mux) SetCORSPolicy(ac *AccessControlResponse) {
 }
 
 func (s *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			reason := fmt.Sprintf("%s", err)
+			InternalServerError(reason, "", s.Debug).ServeHTTP(w, r)
+		}
+	}()
+
 	// Custom headers are written no matter what.
 	for key, values := range s.header {
 		for i, value := range values {

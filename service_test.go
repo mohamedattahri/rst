@@ -2,6 +2,7 @@ package rst
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -165,6 +166,13 @@ func (ec *echoEndpoint) Preflight(acReq *AccessControlRequest, r *http.Request) 
 	}
 }
 
+type panicEndpoint struct{}
+
+// Post will simply return any data found in the body of the request.
+func (ep *panicEndpoint) Get(vars RouteVars, r *http.Request) (Resource, error) {
+	panic(errors.New("provoked panic"))
+}
+
 type peopleCollection struct{}
 
 // Get returns the content of testPeople.
@@ -261,6 +269,7 @@ func TestMain(m *testing.M) {
 
 	testMux = NewMux()
 	testMux.Handle("/echo", EndpointHandler(&echoEndpoint{}))
+	testMux.Handle("/panic", EndpointHandler(&panicEndpoint{}))
 	testMux.Handle("/people", EndpointHandler(&peopleCollection{}))
 	testMux.Handle("/people/{id}", EndpointHandler(&personResource{}))
 	testMux.Handle("/employers", EndpointHandler(&employersCollection{}))

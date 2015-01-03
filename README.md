@@ -6,7 +6,7 @@
 
 ## Getting started
 
-The idea behind `rst` is to have endpoints and resources implementing interfaces to add features.
+The idea behind `rst` is to have endpoints and resources implement interfaces to add features.
 
 Endpoints can implement [Getter](#getter), [Poster](#poster), [Patcher](#patcher), [Putter](#putter) or [Deleter](#deleter) to respectively allow the `HEAD`/`GET`, `POST`, `PATCH`, `PUT`, and `DELETE` HTTP methods.
 
@@ -69,6 +69,7 @@ Routing of requests in `rst` is powered by [Gorilla mux](https://github.com/gori
 
 ```go
 mux := rst.NewMux()
+mux.Debug = true // make sure this is switched back to false before production
 
 // Headers set in mux are added to all responses
 mux.Header().Set("Server", "Awesome Service Software 1.0")
@@ -78,8 +79,6 @@ mux.Handle("/people/{id:\\d+}", rst.EndpointHandler(&PersonEP{}))
 
 http.ListenAndServe(":8080", mux)
 ```
-
-At this point, our service only allows `GET` requests on a resource called `Person`.
 
 ### Encoding
 
@@ -182,7 +181,7 @@ Patcher allows an endpoint to handle `PATCH` requests.
 ```go
 func (ep *endpoint) Patch(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
     resource := database.Find(vars.Get("id"))
-    if resource != nil {
+    if resource == nil {
         return nil, rst.NotFound()
     }
 
@@ -195,7 +194,7 @@ func (ep *endpoint) Patch(vars rst.RouteVars, r *http.Request) (rst.Resource, er
 		return nil, rst.PreconditionFailed()
     }
 
-    // Read r.Body and an apply changes to resource
+    // Read r.Body and apply changes to resource
     // then return it
     return resource, nil
 }
@@ -208,7 +207,7 @@ Putter allows an endpoint to handle `PUT` requests.
 ```go
 func (ep *endpoint) Put(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
     resource := database.Find(vars.Get("id"))
-    if resource != nil {
+    if resource == nil {
         return nil, rst.NotFound()
     }
 
@@ -217,7 +216,7 @@ func (ep *endpoint) Put(vars rst.RouteVars, r *http.Request) (rst.Resource, erro
 		return nil, rst.PreconditionFailed()
     }
 
-    // Read r.Body and an apply changes to resource
+    // Read r.Body and apply changes to resource
     // then return it
     return resource, nil
 }

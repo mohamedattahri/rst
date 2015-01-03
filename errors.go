@@ -1,8 +1,13 @@
 package rst
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"runtime"
 	"strings"
 )
 
@@ -99,6 +104,39 @@ func RequestedRangeNotSatisfiable(cr *ContentRange) *Error {
 	return err
 }
 
+type stackRecord struct {
+	Filename string `json:"file" xml:"File"`
+	Line     int    `json:"line" xml:"Line"`
+	Funcname string `json:"func" xml:"Func"`
+}
+
+// InternalServerError represents an error with status code 500.
+//
+// When captureStack is true, the stack trace will be captured and displayed in
+// the HTML projection of the returned error if mux.Debug is true.
+func InternalServerError(reason, description string, captureStack bool) *Error {
+	err := NewError(http.StatusInternalServerError, reason, description)
+	if captureStack {
+		var stack []*stackRecord
+		for skip := 2; ; skip++ {
+			pc, file, line, ok := runtime.Caller(skip)
+			if !ok {
+				break
+			}
+			if !strings.HasSuffix(file, ".go") || strings.HasSuffix(file, "runtime/panic.go") {
+				continue
+			}
+			stack = append(stack, &stackRecord{
+				Filename: file,
+				Line:     line,
+				Funcname: runtime.FuncForPC(pc).Name(),
+			})
+		}
+		err.Stack = stack
+	}
+	return err
+}
+
 // Error represents an HTTP error, with a status code, a reason and a
 // description.
 // Error is both a valid Go error and a client of the http.Handler interface.
@@ -106,10 +144,11 @@ func RequestedRangeNotSatisfiable(cr *ContentRange) *Error {
 // Header can be used to specify headers that will be written in the HTTP
 // response generated from this error.
 type Error struct {
-	Code        int         `json:"-" xml:"-"`
-	Header      http.Header `json:"-" xml:"-"`
-	Reason      string      `json:"message" xml:"Message"`
-	Description string      `json:"description" xml:"Description"`
+	Code        int            `json:"-" xml:"-"`
+	Header      http.Header    `json:"-" xml:"-"`
+	Reason      string         `json:"message" xml:"Message"`
+	Description string         `json:"description,omitempty" xml:"Description,omitempty"`
+	Stack       []*stackRecord `json:"stack,omitempty" xml:"Stack,omitempty"`
 }
 
 func (e *Error) Error() string {
@@ -120,19 +159,26 @@ func (e *Error) String() string {
 	return e.Error()
 }
 
+// StatusText returns a text for the HTTP status code of this error. It returns
+// the empty string if the code is unknown.
+func (e *Error) StatusText() string {
+	return http.StatusText(e.Code)
+}
+
 // MarshalREST is implemented to generate an HTML rendering of the error.
 func (e *Error) MarshalREST(r *http.Request) (string, []byte, error) {
 	accept := ParseAccept(r.Header.Get("Accept"))
 	ct := accept.Negotiate("text/html", "*/*")
 	if strings.Contains(ct, "html") || ct == "*/*" {
-		html := fmt.Sprintf(
-			`<!DOCTYPE html><html><head><title>%d (%s)</title></head><body><h1>%s</h1><p>%s</p></body></html>`,
-			e.Code,
-			http.StatusText(e.Code),
-			e.Reason,
-			e.Description,
-		)
-		return "text/html", []byte(html), nil
+		buffer := &bytes.Buffer{}
+		var data = struct {
+			Request *http.Request
+			*Error
+		}{Request: r, Error: e}
+		if err := errorTemplate.Execute(buffer, &data); err != nil {
+			return "", nil, err
+		}
+		return "text/html; charset=utf-8", buffer.Bytes(), nil
 	}
 	return MarshalResource(e, r)
 }
@@ -153,6 +199,9 @@ func (e *Error) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", ct)
 	w.Header().Add("Vary", "Accept")
+	if e.Code != http.StatusNotFound && e.Code != http.StatusGone {
+		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+	}
 	w.WriteHeader(e.Code)
 	w.Write(b)
 }
@@ -168,5 +217,24 @@ func NewError(code int, reason, description string) *Error {
 		Reason:      reason,
 		Description: description,
 		Header:      make(http.Header),
+	}
+}
+
+var errorTemplate *template.Template
+
+func init() {
+	// errorTemplate is based on data embedded in assets.go using go generate
+	// and the esc tool (https://github.com/mjibson/esc).
+	f, err := FS(false).Open("/assets/error.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	errorTemplate, err = template.New("rst.errorTemplate").Parse(string(b))
+	if err != nil {
+		log.Fatal(err)
 	}
 }
