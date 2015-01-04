@@ -125,6 +125,10 @@ A resource can implement the [Ranger](#ranger) interface to gain the ability to 
 
 `Ranger.Range` method will be called when a valid `Range` header is found in an incoming `GET` request.
 
+The `Accept-Range` header will be inserted automatically.
+
+The supported range units and the range extent will be validated for you.
+
 Note that the `If-Range` conditional header is supported as well.
 
 ### CORS
