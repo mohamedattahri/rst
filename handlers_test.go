@@ -252,7 +252,7 @@ func TestPartialGetNotSatisfiableHandler(t *testing.T) {
 		if err := rr.TestStatusCode(http.StatusRequestedRangeNotSatisfiable); err != nil {
 			t.Fatal(err)
 		}
-		if err := rr.TestHeader("Content-Range", fmt.Sprintf("resources */%d", len(testPeopleResourceCollection))); err != nil {
+		if err := rr.TestHeader("Content-Range", fmt.Sprintf("*/%d", len(testPeopleResourceCollection))); err != nil {
 			t.Fatal(err)
 		}
 	}

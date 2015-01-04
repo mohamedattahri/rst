@@ -125,6 +125,10 @@ A resource can implement the [Ranger](#ranger) interface to gain the ability to 
 
 `Ranger.Range` method will be called when a valid `Range` header is found in an incoming `GET` request.
 
+The `Accept-Range` header will be inserted automatically.
+
+The supported range units and the range extent will be validated for you.
+
 Note that the `If-Range` conditional header is supported as well.
 
 ### CORS
@@ -268,18 +272,17 @@ Resources that implement Ranger can handle requests with a `Range` header and re
 type Doc []byte
 // assuming Doc implements rst.Resource interface
 
+// Supported units will be displayed in the Accept-Range header
+func (d *Doc) Units() []string {
+    return []string{"bytes"}
+}
+
 // Count returns the total number of range units available
 func (d *Doc) Count() uint64 {
 	return uint64(len(d))
 }
 
 func (d *Doc) Range(rg *rst.Range) (*rst.ContentRange, rst.Resource, error) {
-	if rg.Unit != "bytes" {
-		// the Range header is ignored if the range unit passed is not bytes.
-		// Request will be processed like a normal HTTP Get request because
-		// ErrUnsupportedRangeUnit is returned.
-		return nil, nil, ErrUnsupportedRangeUnit
-	}
 	cr := &ContentRange{rg, c.Count()}
 	part := d[rg.From : rg.To+1]
 	return cr, part, nil

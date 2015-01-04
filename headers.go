@@ -140,19 +140,28 @@ func (r *Range) Len() uint64 {
 }
 
 /*
-Adjust will correct r to fall within the boundaries of ranger. If r does not
+adjust will correct r to fall within the boundaries of ranger. If r does not
 overlap the current extend of ranger, a RequestedRangeNotSatifiable error will
 be returned.
 
 Range entities are always adjusted before they are passed to Ranger.Range
 implementer.
 */
-func (r *Range) Adjust(ranger Ranger) error {
+func (r *Range) adjust(ranger Ranger) error {
+	supported := false
+	for _, u := range ranger.Units() {
+		if strings.EqualFold(r.Unit, u) {
+			supported = true
+			break
+		}
+	}
+	if !supported {
+		return errUnsupportedRangeUnit
+	}
+
 	count := ranger.Count()
 	if r.From > count {
-		return RequestedRangeNotSatisfiable(
-			&ContentRange{Range: r, Total: count},
-		)
+		return RequestedRangeNotSatisfiable(&ContentRange{Total: count})
 	}
 	r.To = uint64(math.Min(float64(r.To), float64(count-1)))
 	return nil
@@ -203,11 +212,13 @@ type ContentRange struct {
 }
 
 func (cr *ContentRange) String() string {
-	var total string
 	if cr.Total == 0 {
-		total = "*"
-	} else {
-		total = strconv.FormatUint(cr.Total, 10)
+		return "*/*"
 	}
-	return fmt.Sprintf("%s %d-%d/%s", cr.Unit, cr.From, cr.To, total)
+
+	if cr.Range == nil {
+		return fmt.Sprintf("*/%d", cr.Total)
+	}
+
+	return fmt.Sprintf("%s %d-%d/%d", cr.Unit, cr.From, cr.To, cr.Total)
 }

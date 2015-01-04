@@ -41,7 +41,7 @@ func TestParseRange(t *testing.T) {
 func TestAcceptAdjust(t *testing.T) {
 	from, to := uint64(15), uint64(100000)
 	rg := &Range{"resources", from, to}
-	rg.Adjust(testPeopleResourceCollection)
+	rg.adjust(testPeopleResourceCollection)
 
 	if from != rg.From {
 		t.Fatal("from did not match. Got:", rg.From, "Wanted:", from)
