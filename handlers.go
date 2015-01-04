@@ -8,25 +8,10 @@ import (
 )
 
 /*
-ErrUnsupportedRangeUnit is used to ignore a Range header when handling
+errUnsupportedRangeUnit is used to ignore a Range header when handling
 a Get request, because the range unit requested is unsupported.
-	type collection []Resource
-
-	func (c collection) Range(rg *Range) (*ContentType, Resource, error) {
-		if rg.Unit == "unsupported" {
-			// Returns a response in which c is entirely present
-			return nil, nil, ErrUnsupportedRangeUnit
-		}
-
-		if someCondition(c) == false {
-			// Returns an HTTP response with status code 400.
-			return nil, nil, BadRequest("someCondition has failed.", "Do something different")
-		}
-
-		return &ContentRange{rg, c.Count()}, collection[rg.From, rg.To+1], nil
-	}
 */
-var ErrUnsupportedRangeUnit = errors.New("unsupported range unit")
+var errUnsupportedRangeUnit = errors.New("unsupported range unit")
 
 // Resource represents a resource exposed on a REST service using an Endpoint.
 type Resource interface {
@@ -47,7 +32,6 @@ r are conflicting with the current version of resource.
 
 		// apply the patch safely from here
 	}
-
 */
 func Conflicts(resource Resource, r *http.Request) bool {
 	if d, err := time.Parse(rfc1123, r.Header.Get("If-Unmodified-Since")); err == nil {
@@ -70,33 +54,31 @@ Otherwise, it will be processed as a normal Get request.
 	type Doc []byte
 	// assuming Doc implements rst.Resource interface
 
+	// Supported units will be displayed in the Accept-Range header
+		func (d *Doc) Units() []string {
+		return []string{"bytes"}
+	}
+
 	// Count returns the total number of range units available
 	func (d *Doc) Count() uint64 {
 		return uint64(len(d))
 	}
 
 	func (d *Doc) Range(rg *rst.Range) (*rst.ContentRange, rst.Resource, error) {
-		if rg.Unit != "bytes" {
-			// the Range header is ignored if the range unit passed is not bytes.
-			// Request will be processed like a normal HTTP Get request because
-			// ErrUnsupportedRangeUnit is returned.
-			return nil, nil, ErrUnsupportedRangeUnit
-		}
 		cr := &ContentRange{rg, c.Count()}
 		part := d[rg.From : rg.To+1]
 		return cr, part, nil
 	}
 */
 type Ranger interface {
+	// Supported range units
+	Units() []string
+
 	// Total number of units available
 	Count() uint64
 
 	// Range is used to return the part of the resource that is indicated by the
 	// passed range.
-	//
-	// If the error is ErrUnsupportedRangeUnit, the attempt to handle
-	// the request as a partial GET will be canceled and the entire resource will
-	// be returned.
 	Range(*Range) (*ContentRange, Resource, error)
 }
 
@@ -216,6 +198,7 @@ func (f getFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeResource(resource, w, r)
 		return
 	}
+	w.Header().Set("Accept-Range", strings.Join(ranger.Units(), ", "))
 
 	// Check if request contains a valid Range header
 	rg, err := ParseRange(r.Header.Get("Range"))
@@ -235,16 +218,16 @@ func (f getFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := rg.Adjust(ranger); err != nil {
-		writeError(err, w, r)
+	if err := rg.adjust(ranger); err != nil {
+		if err == errUnsupportedRangeUnit {
+			writeResource(resource, w, r)
+		} else {
+			writeError(err, w, r)
+		}
 		return
 	}
 
 	cr, partial, err := ranger.Range(rg)
-	if err == ErrUnsupportedRangeUnit {
-		writeResource(resource, w, r)
-		return
-	}
 	if err != nil {
 		writeError(err, w, r)
 		return

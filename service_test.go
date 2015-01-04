@@ -98,10 +98,11 @@ func (c resourceCollection) Count() uint64 {
 	return uint64(len(c))
 }
 
+func (c resourceCollection) Units() []string {
+	return []string{"bytes", "resources"}
+}
+
 func (c resourceCollection) Range(rg *Range) (*ContentRange, Resource, error) {
-	if rg.Unit == "unsupported" {
-		return nil, nil, ErrUnsupportedRangeUnit
-	}
 	return &ContentRange{rg, c.Count()}, c[rg.From : rg.To+1], nil
 }
 
@@ -268,6 +269,7 @@ func TestMain(m *testing.M) {
 	}
 
 	testMux = NewMux()
+	testMux.Debug = true
 	testMux.Handle("/echo", EndpointHandler(&echoEndpoint{}))
 	testMux.Handle("/panic", EndpointHandler(&panicEndpoint{}))
 	testMux.Handle("/people", EndpointHandler(&peopleCollection{}))

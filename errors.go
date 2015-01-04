@@ -72,7 +72,7 @@ func PreconditionFailed() *Error {
 }
 
 // UnsupportedMediaType is returned when the entity in the request is in a format
-// no support by the server. The supported media MIME type strings can be passed
+// not support by the server. The supported media MIME type strings can be passed
 // to improve the description of the error description.
 func UnsupportedMediaType(mimes ...string) *Error {
 	description := "The entity in the request is in a format not supported by this resource."
@@ -95,11 +95,7 @@ func RequestedRangeNotSatisfiable(cr *ContentRange) *Error {
 		http.StatusText(http.StatusRequestedRangeNotSatisfiable),
 		"The requested range is not available and cannot be served.",
 	)
-	if cr.Total == 0 {
-		err.Header.Set("Content-Range", "*/*")
-	} else {
-		err.Header.Set("Content-Range", fmt.Sprintf("%s */%d", cr.Unit, cr.Total))
-	}
+	err.Header.Set("Content-Range", cr.String())
 	err.Header.Add("Vary", "Range")
 	return err
 }
