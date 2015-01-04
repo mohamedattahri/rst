@@ -210,11 +210,16 @@ func (f getFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if resource is a Ranger, and the request contains a valid Range
-	// header
-	rg, err := ParseRange(r.Header.Get("Range"))
+	// Check if resource implements Ranger
 	ranger, implemented := resource.(Ranger)
-	if !implemented || err != nil {
+	if !implemented {
+		writeResource(resource, w, r)
+		return
+	}
+
+	// Check if request contains a valid Range header
+	rg, err := ParseRange(r.Header.Get("Range"))
+	if err != nil {
 		writeResource(resource, w, r)
 		return
 	}
