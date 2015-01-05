@@ -13,7 +13,23 @@ a Get request, because the range unit requested is unsupported.
 */
 var errUnsupportedRangeUnit = errors.New("unsupported range unit")
 
-// Resource represents a resource exposed on a REST service using an Endpoint.
+/*
+Resource represents a resource exposed on a REST service using an Endpoint.
+
+There are other interfaces that can be implemented by a resource to either
+control its projection in a response payload, or add support for advanced HTTP
+features:
+
+- The Ranger interface adds support for range requests et allows the resource to
+return partial responses.
+
+- The Marshaler interface allows you to customize the encoding process of the
+resource and control the bytes returned in the payload of the response.
+
+- The http.Handler interface can be used to gain direct access to the current
+ResponseWriter and request. However, This is a low level method that should only
+be used when you need to write chunked responses.
+*/
 type Resource interface {
 	ETag() string            // ETag identifying the current version of the resource.
 	LastModified() time.Time // Date and time of the last modification of the resource.
@@ -103,6 +119,19 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Headers
+	w.Header().Add("Vary", "Accept")
+	w.Header().Set("Last-Modified", resource.LastModified().UTC().Format(rfc1123))
+	w.Header().Set("ETag", resource.ETag())
+	w.Header().Set("Expires", time.Now().Add(resource.TTL()).UTC().Format(rfc1123))
+
+	// If resource implements http.Handler, let it write in the ResponseWriter
+	// on its own.
+	if handler, implemented := resource.(http.Handler); implemented {
+		handler.ServeHTTP(w, r)
+		return
+	}
+
 	var (
 		contentType string
 		b           []byte
@@ -113,12 +142,7 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 		writeError(err, w, r)
 		return
 	}
-	w.Header().Add("Vary", "Accept")
-
-	// Headers
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Last-Modified", resource.LastModified().UTC().Format(rfc1123))
-	w.Header().Set("Expires", time.Now().Add(resource.TTL()).UTC().Format(rfc1123))
 
 	if compression := getCompressionFormat(b, r); compression != "" {
 		w.Header().Set("Content-Encoding", compression)
@@ -149,7 +173,9 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-// Endpoint represents an access point exposing a resource in the REST service.
+/*
+Endpoint represents an access point exposing a resource in the REST service.
+*/
 type Endpoint interface{}
 
 /*

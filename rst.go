@@ -14,8 +14,9 @@ add features.
 Endpoints can implement Getter, Poster, Patcher, Putter or Deleter to
 respectively allow the HEAD/GET, POST, PATCH, PUT, and DELETE HTTP methods.
 
-Resources can implement Ranger to support partial GET requests, or Marshaler to
-customize the process with which they are encoded.
+Resources can implement Ranger to support partial GET requests, Marshaler to
+customize the process with which they are encoded, or http.Handler to have a
+complete control over the ResponseWriter.
 
 With these interfaces, the complexity behind dealing with all the headers and
 status codes of the HTTP protocol is abstracted to let you focus on returning a
