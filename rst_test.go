@@ -35,6 +35,13 @@ func (rr *requestResponse) TestStatusCode(code int) error {
 	return nil
 }
 
+func (rr *requestResponse) TestHasHeader(key string) error {
+	if _, exists := rr.resp.Header[http.CanonicalHeaderKey(key)]; !exists {
+		return fmt.Errorf("expected to find header %s", key)
+	}
+	return nil
+}
+
 func (rr *requestResponse) TestHeader(key, value string) error {
 	if rr.err != nil {
 		return rr.err

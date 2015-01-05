@@ -10,7 +10,7 @@ The idea behind `rst` is to have endpoints and resources implement interfaces to
 
 Endpoints can implement [Getter](#getter), [Poster](#poster), [Patcher](#patcher), [Putter](#putter) or [Deleter](#deleter) to respectively allow the `HEAD`/`GET`, `POST`, `PATCH`, `PUT`, and `DELETE` HTTP methods.
 
-Resources can implement [Ranger](#ranger) to support partial `GET` requests, or [Marshaler](#marshaler) to customize the process with which they are encoded.
+Resources can implement [Ranger](#ranger) to support partial `GET` requests, [Marshaler](#marshaler) to customize the process with which they are encoded, or [http.Handler](#http.handler) to have a complete control over the ResponseWriter.
 
 With these interfaces, the complexity behind dealing with all the headers and status codes of the HTTP protocol is abstracted to let you focus on returning a resource or an error.
 
@@ -312,5 +312,34 @@ func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
 	}
 
 	return rst.MarshalResource(u, r)
+}
+```
+
+#### <a id="http.handler"></a>http.Handler
+
+http.Handler is a low level solution for when you need
+complete control over the process by which a resource
+is written in the response's payload.
+
+In the following example, http.Handler is implemented to return a chunked response.
+
+```go
+type User struct{}
+// assuming User implements rst.Resource
+
+// ServeHTTP will send half the data now, and the
+// rest 10 seconds later.
+func (u *User) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    ct, b, err := rst.MarshalResource(u, r)
+    if err != nil {
+        rst.ErrorHandler(err).ServeHTTP(w, r)
+        return
+    }
+    w.Header.Set("Content-Type", ct)
+
+    half := len(b) / 2
+    w.Write(b[:half])
+    time.Sleep(10 *time.Second)
+    w.Write(b[half:])
 }
 ```

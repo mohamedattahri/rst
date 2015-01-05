@@ -73,6 +73,22 @@ func TestAllowedMethods(t *testing.T) {
 	}
 }
 
+func TestResourceHTTPHandlerInterface(t *testing.T) {
+	rr := newRequestResponse(Post, testServerAddr+"/chunked", nil, bytes.NewReader(testMBText))
+	if err := rr.TestStatusCode(http.StatusOK); err != nil {
+		t.Fatal(err)
+	}
+	if err := rr.TestHasHeader("Last-Modified"); err != nil {
+		t.Fatal(err)
+	}
+	if err := rr.TestHasHeader("Etag"); err != nil {
+		t.Fatal(err)
+	}
+	if err := rr.TestHasHeader("Expires"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGetMethodHandler(t *testing.T) {
 	var test = func(method string, header http.Header, expected reflect.Type) {
 		all := &allInterfaces{}
@@ -123,7 +139,15 @@ func TestGetHandler(t *testing.T) {
 		if err := rr.TestHeader("Content-Type", header.Get("Accept")); err != nil {
 			t.Fatal(err)
 		}
-
+		if err := rr.TestHasHeader("Last-Modified"); err != nil {
+			t.Fatal(err)
+		}
+		if err := rr.TestHasHeader("Etag"); err != nil {
+			t.Fatal(err)
+		}
+		if err := rr.TestHasHeader("Expires"); err != nil {
+			t.Fatal(err)
+		}
 		return rr
 
 	}

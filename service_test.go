@@ -149,6 +149,27 @@ func (e *echoResource) TTL() time.Duration {
 	return 0
 }
 
+type chunckedEchoResource struct {
+	content []byte
+}
+
+func (e *chunckedEchoResource) LastModified() time.Time {
+	return testTimeReference
+}
+
+func (e *chunckedEchoResource) ETag() string {
+	return "*"
+}
+
+func (e *chunckedEchoResource) TTL() time.Duration {
+	return 0
+}
+
+// ServeHTTP will write 1/10th of e.content every 5 seconds.
+func (e *chunckedEchoResource) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Write(e.content)
+}
+
 type echoEndpoint struct{}
 
 // Post will simply return any data found in the body of the request.
@@ -165,6 +186,18 @@ func (ec *echoEndpoint) Preflight(acReq *AccessControlRequest, r *http.Request) 
 	return &AccessControlResponse{
 		Origin: "preflighted.domain.com",
 	}
+}
+
+type chunkedEchoEndpoint struct{}
+
+// Post will simply return any data found in the body of the request.
+func (ec *chunkedEchoEndpoint) Post(vars RouteVars, r *http.Request) (Resource, string, error) {
+	c, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, "", err
+	}
+	defer r.Body.Close()
+	return &chunckedEchoResource{c}, "", nil
 }
 
 type panicEndpoint struct{}
@@ -271,6 +304,7 @@ func TestMain(m *testing.M) {
 	testMux = NewMux()
 	testMux.Debug = true
 	testMux.Handle("/echo", EndpointHandler(&echoEndpoint{}))
+	testMux.Handle("/chunked", EndpointHandler(&chunkedEchoEndpoint{}))
 	testMux.Handle("/panic", EndpointHandler(&panicEndpoint{}))
 	testMux.Handle("/people", EndpointHandler(&peopleCollection{}))
 	testMux.Handle("/people/{id}", EndpointHandler(&personResource{}))
