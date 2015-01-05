@@ -193,6 +193,12 @@ func (e *Error) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Remove headers which might have been set by a previous assumption of
+	// success.
+	w.Header().Del("Last-Modified")
+	w.Header().Del("ETag")
+	w.Header().Del("Expires")
+
 	w.Header().Set("Content-Type", ct)
 	w.Header().Add("Vary", "Accept")
 	if e.Code != http.StatusNotFound && e.Code != http.StatusGone {
