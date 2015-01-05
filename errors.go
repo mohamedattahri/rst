@@ -11,6 +11,15 @@ import (
 	"strings"
 )
 
+// ErrorHandler is a wrapper that allows any Go error to implement the
+// http.Handler interface.
+func ErrorHandler(err error) http.Handler {
+	if e, ok := err.(*Error); ok {
+		return e
+	}
+	return InternalServerError(err.Error(), "", false)
+}
+
 // BadRequest is returned when the request could not be understood by the
 // server due to malformed syntax.
 func BadRequest(reason, description string) *Error {

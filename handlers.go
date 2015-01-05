@@ -83,16 +83,7 @@ type Ranger interface {
 }
 
 func writeError(e error, w http.ResponseWriter, r *http.Request) {
-	if err, valid := e.(*Error); valid {
-		err.ServeHTTP(w, r)
-		return
-	}
-	err := NewError(
-		http.StatusInternalServerError,
-		http.StatusText(http.StatusInternalServerError),
-		e.Error(),
-	)
-	err.ServeHTTP(w, r)
+	ErrorHandler(e).ServeHTTP(w, r)
 }
 
 func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
