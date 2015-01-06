@@ -1,5 +1,7 @@
 # github.com/mohamedattahri/rst
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mohamedattahri/rst?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Build Status](https://travis-ci.org/mohamedattahri/rst.svg?branch=master)](https://travis-ci.org/mohamedattahri/rst)  [![GoDoc](https://godoc.org/github.com/mohamedattahri/rst?status.svg)](https://godoc.org/github.com/mohamedattahri/rst)
 
 `rst` implements tools and methods to expose resources in a RESTFul service.
