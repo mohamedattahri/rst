@@ -87,6 +87,9 @@ func TestResourceHTTPHandlerInterface(t *testing.T) {
 	if err := rr.TestHasHeader("Expires"); err != nil {
 		t.Fatal(err)
 	}
+	if err := rr.TestBody(bytes.NewReader(testMBText)); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestGetMethodHandler(t *testing.T) {
