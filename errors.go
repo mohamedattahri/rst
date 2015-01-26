@@ -17,7 +17,10 @@ func ErrorHandler(err error) http.Handler {
 	if e, ok := err.(*Error); ok {
 		return e
 	}
-	return InternalServerError(err.Error(), "", false)
+	// panic will be intercepted in the main mux handler, and will write a
+	// response which may display debugging info or hide them depending on the
+	// Debug variable set in the mux.
+	panic(err)
 }
 
 // BadRequest is returned when the request could not be understood by the
@@ -115,6 +118,10 @@ type stackRecord struct {
 	Funcname string `json:"func" xml:"Func"`
 }
 
+func (r *stackRecord) String() string {
+	return fmt.Sprintf("Line %d: %s - %s", r.Line, r.Filename, r.Funcname)
+}
+
 // InternalServerError represents an error with status code 500.
 //
 // When captureStack is true, the stack trace will be captured and displayed in
@@ -161,7 +168,19 @@ func (e *Error) Error() string {
 }
 
 func (e *Error) String() string {
-	return e.Error()
+	s := fmt.Sprintf("%d (%s) - %s", e.Code, http.StatusText(e.Code), e.Reason)
+
+	if e.Description != "" {
+		s += fmt.Sprintf("\n%s", e.Description)
+	}
+
+	if e.Stack != nil && len(e.Stack) > 0 {
+		s += "\n"
+		for _, r := range e.Stack {
+			s += fmt.Sprintf("\n- %s", r)
+		}
+	}
+	return s
 }
 
 // StatusText returns a text for the HTTP status code of this error. It returns

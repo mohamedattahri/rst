@@ -1,7 +1,9 @@
 package rst
 
 import (
+	"bytes"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"testing"
@@ -32,9 +34,26 @@ func TestInternalServerErrorStackDisplay(t *testing.T) {
 			t.Fatal("Contains stack. Got:", got, "Wanted:", expected)
 		}
 	}
+
+	logger := testMux.Logger
+	debug := testMux.Debug
+	defer func() {
+		testMux.Logger = logger
+		testMux.Debug = debug
+	}()
+
+	buffer := new(bytes.Buffer)
+
+	buffer.Reset()
+	testMux.Logger = log.New(ioutil.Discard, "", log.Ltime)
 	testMux.Debug = true
 	test(testMux.Debug)
 
+	buffer.Reset()
+	testMux.Logger = log.New(buffer, "", log.Ltime)
 	testMux.Debug = false
 	test(testMux.Debug)
+	if !strings.Contains(buffer.String(), "500 (Internal Server Error)") {
+		t.Fatalf("provoked panic with Debug=False did not log message correctly: %s", buffer.String())
+	}
 }

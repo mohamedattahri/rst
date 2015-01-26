@@ -157,7 +157,9 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gorilla/context"
@@ -264,6 +266,7 @@ func delVars(r *http.Request) {
 // requests against a list of registered REST endpoints.
 type Mux struct {
 	Debug  bool // Set to true to display stack traces and debug info in errors.
+	Logger *log.Logger
 	header http.Header
 	ac     *AccessControlResponse
 	m      *gorillaMux.Router
@@ -272,6 +275,7 @@ type Mux struct {
 // NewMux initializes a new REST multiplexer.
 func NewMux() *Mux {
 	s := &Mux{
+		Logger: log.New(os.Stdout, "rst: ", log.LstdFlags),
 		header: make(http.Header),
 		m:      gorillaMux.NewRouter(),
 	}
@@ -301,7 +305,12 @@ func (s *Mux) SetCORSPolicy(ac *AccessControlResponse) {
 func (s *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
-			reason := fmt.Sprintf("%s", err)
+			reason := fmt.Sprintf("%s", err) // Stringer interface
+			if !s.Debug {
+				t := InternalServerError(reason, "", true)
+				s.Logger.Println(t.String())
+				reason = "internal server error"
+			}
 			InternalServerError(reason, "", s.Debug).ServeHTTP(w, r)
 		}
 	}()
