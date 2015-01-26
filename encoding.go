@@ -72,7 +72,7 @@ func MarshalResource(resource interface{}, r *http.Request) (contentType string,
 	}
 
 	switch accept.Negotiate(alternatives...) {
-	case "application/json", "text/javascript", "*/*":
+	case "application/json", "text/javascript":
 		b, err := json.Marshal(resource)
 		return "application/json; charset=utf-8", b, err
 	case "application/xml", "text/xml":
