@@ -31,7 +31,7 @@ var PermissiveAccessControl = &AccessControlResponse{
 Preflighter is implemented by endpoints wishing to customize the response to
 a CORS preflighted request.
 
-	func (e *endpoint) Preflight(req *rst.AccessControlRequest, r *http.Request) *rst.AccessControlResponse {
+	func (e *endpoint) Preflight(req *rst.AccessControlRequest, vars rst.RouteVars, r *http.Request) *rst.AccessControlResponse {
 		if time.Now().Hour() < 12 {
 			return &rst.AccessControlResponse{
 				Origin: "morning.example.com",

@@ -249,7 +249,7 @@ Preflighter allows you to customize the CORS headers returned to an `OPTIONS` pr
 For the endpoint in this example, different policies are implemented for different times of the day.
 
 ```go
-func (e *endpoint) Preflight(req *rst.AccessControlRequest, r *http.Request) *rst.AccessControlResponse {
+func (e *endpoint) Preflight(req *rst.AccessControlRequest, vars rst.RouteVars, r *http.Request) *rst.AccessControlResponse {
 	if time.Now().Hour() < 12 {
 		return &rst.AccessControlResponse{
 			Origin: "morning.example.com",
