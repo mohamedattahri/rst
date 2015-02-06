@@ -350,4 +350,4 @@ func (u *User) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 Set `mux.Debug` to `true` and `rst` will recover from panics and errors with status code 500 to display a useful page with the full stack trace and info about the request.
 
-![alt tag](//raw.github.com/mohamedattahri/rst/master/assets/recover.jpg)
+![alt tag](/assets/recover.jpg)
