@@ -50,6 +50,8 @@ type Marshaler interface {
 	MarshalREST(*http.Request) (contentType string, data []byte, err error)
 }
 
+var jsonNull = []byte("null")
+
 // MarshalResource negotiates contentType based on the Accept header in r, and returns
 // the encoded version of resource as an array of bytes.
 //
@@ -74,6 +76,9 @@ func MarshalResource(resource interface{}, r *http.Request) (contentType string,
 	switch accept.Negotiate(alternatives...) {
 	case "application/json", "text/javascript":
 		b, err := json.Marshal(resource)
+		if bytes.Equal(b, jsonNull) {
+			b = []byte{}
+		}
 		return "application/json; charset=utf-8", b, err
 	case "application/xml", "text/xml":
 		b, err := marshalXML(resource)
