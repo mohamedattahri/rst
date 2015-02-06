@@ -113,7 +113,7 @@ func (f *_esc_file) Sys() interface{} {
 
 // FS returns a http.Filesystem for the embedded assets. If useLocal is true,
 // the filesystem's contents are instead used.
-func FS(useLocal bool) http.FileSystem {
+func rstFS(useLocal bool) http.FileSystem {
 	if useLocal {
 		return _esc_local
 	}

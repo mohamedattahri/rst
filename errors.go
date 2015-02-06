@@ -255,7 +255,7 @@ var errorTemplate *template.Template
 func init() {
 	// errorTemplate is based on data embedded in assets.go using go generate
 	// and the esc tool (https://github.com/mjibson/esc).
-	f, err := FS(false).Open("/assets/error.html")
+	f, err := rstFS(false).Open("/assets/error.html")
 	if err != nil {
 		log.Fatal(err)
 	}
