@@ -137,6 +137,13 @@ func TestMuxHeaders(t *testing.T) {
 	test(testServerAddr + "/manu") // 404 NOT FOUND
 }
 
+func TestBypass(t *testing.T) {
+	rr := newRequestResponse(Post, testServerAddr+"/bypass", nil, nil)
+	if err := rr.TestBody(bytes.NewBuffer(testCannedBytes)); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestResponseCompression(t *testing.T) {
 	header := make(http.Header)
 

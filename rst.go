@@ -332,14 +332,17 @@ func (s *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handler, validEndpoint := match.Handler.(*endpointHandler)
-	setVars(r, RouteVars(match.Vars))
-	defer delVars(r)
-
-	if s.ac != nil && validEndpoint {
-		newAccessControlHandler(handler.endpoint, s.ac).ServeHTTP(w, r)
+	if handler, valid := match.Handler.(*endpointHandler); valid {
+		setVars(r, RouteVars(match.Vars))
+		defer delVars(r)
+		if s.ac != nil {
+			newAccessControlHandler(handler.endpoint, s.ac).ServeHTTP(w, r)
+		}
+		handler.ServeHTTP(newResponseWriter(w), r)
+		return
 	}
-	handler.ServeHTTP(newResponseWriter(w), r)
+
+	match.Handler.ServeHTTP(w, r)
 }
 
 // HandleEndpoint registers the endpoint for the given pattern.

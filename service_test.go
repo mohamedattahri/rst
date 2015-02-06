@@ -303,6 +303,11 @@ func TestMain(m *testing.M) {
 
 	testMux = NewMux()
 	testMux.Debug = true
+
+	testMux.Handle("/bypass", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(testCannedBytes)
+	}))
+
 	testMux.Handle("/echo", EndpointHandler(&echoEndpoint{}))
 	testMux.Handle("/chunked", EndpointHandler(&chunkedEchoEndpoint{}))
 	testMux.Handle("/panic", EndpointHandler(&panicEndpoint{}))
