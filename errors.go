@@ -36,6 +36,27 @@ func BadRequest(reason, description string) *Error {
 	return NewError(http.StatusBadRequest, reason, description)
 }
 
+// Unauthorized is returned when authentication is required for the server
+// to process the request.
+func Unauthorized() *Error {
+	err := NewError(
+		http.StatusUnauthorized,
+		"Authentication is required",
+		"Authentication is required and has failed or has not yet been provided.",
+	)
+	return err
+}
+
+// Forbidden is returned when a resource is protected and inaccessible.
+func Forbidden() *Error {
+	err := NewError(
+		http.StatusForbidden,
+		"Request will not be fullfilled",
+		"The request was a valid request, but the server is refusing to respond to it. Authenticating will make no difference.",
+	)
+	return err
+}
+
 // NotFound is returned when the server has not found a resource matching the
 // Request-URI.
 func NotFound() *Error {
