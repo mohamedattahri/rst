@@ -182,7 +182,7 @@ func (ec *echoEndpoint) Post(vars RouteVars, r *http.Request) (Resource, string,
 	return &echoResource{c}, "", nil
 }
 
-func (ec *echoEndpoint) Preflight(acReq *AccessControlRequest, r *http.Request) *AccessControlResponse {
+func (ec *echoEndpoint) Preflight(acReq *AccessControlRequest, vars RouteVars, r *http.Request) *AccessControlResponse {
 	return &AccessControlResponse{
 		Origin: "preflighted.domain.com",
 	}

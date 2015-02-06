@@ -46,7 +46,7 @@ a CORS preflighted request.
 	}
 */
 type Preflighter interface {
-	Preflight(*AccessControlRequest, *http.Request) *AccessControlResponse
+	Preflight(*AccessControlRequest, RouteVars, *http.Request) *AccessControlResponse
 }
 
 // AccessControlRequest represents the headers of a CORS access control request.
@@ -108,7 +108,7 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	// If Options and endpoint implements Preflighter, call Preflight.
 	var resp *AccessControlResponse
 	if preflighter, implemented := h.endpoint.(Preflighter); implemented && strings.ToUpper(r.Method) == Options {
-		resp = preflighter.Preflight(req, r)
+		resp = preflighter.Preflight(req, getVars(r), r)
 	} else if h.AccessControlResponse != nil {
 		resp = h.AccessControlResponse
 	} else {
