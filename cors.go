@@ -105,14 +105,16 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	req := ParseAccessControlRequest(r)
 
-	// If Options and endpoint implements Preflighter, call Preflight.
 	var resp *AccessControlResponse
-	if preflighter, implemented := h.endpoint.(Preflighter); implemented && strings.ToUpper(r.Method) == Options {
-		resp = preflighter.Preflight(req, getVars(r), r)
-	} else if h.AccessControlResponse != nil {
+	if h.endpoint == nil {
 		resp = h.AccessControlResponse
 	} else {
-		return
+		if preflighter, implemented := h.endpoint.(Preflighter); implemented && strings.ToUpper(r.Method) == Options {
+			// If Options and endpoint implements Preflighter, call Preflight.
+			resp = preflighter.Preflight(req, getVars(r), r)
+		} else {
+			resp = h.AccessControlResponse
+		}
 	}
 
 	// Adding a vary if an origin is specified in the response.

@@ -339,10 +339,13 @@ func (s *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			newAccessControlHandler(handler.endpoint, s.ac).ServeHTTP(w, r)
 		}
 		handler.ServeHTTP(newResponseWriter(w), r)
-		return
+	} else {
+		if s.ac != nil {
+			newAccessControlHandler(nil, s.ac).ServeHTTP(w, r)
+		}
+		match.Handler.ServeHTTP(w, r)
 	}
 
-	match.Handler.ServeHTTP(w, r)
 }
 
 // HandleEndpoint registers the endpoint for the given pattern.

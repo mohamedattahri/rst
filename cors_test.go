@@ -8,33 +8,43 @@ import (
 func TestSimpleRequestDisabled(t *testing.T) {
 	testMux.SetCORSPolicy(nil)
 
-	header := make(http.Header)
-	header.Set("Origin", "example.com")
-	rr := newRequestResponse(Get, testSafeURL, header, nil)
+	test := func(url string) {
+		header := make(http.Header)
+		header.Set("Origin", "example.com")
+		rr := newRequestResponse(Get, url, header, nil)
 
-	if err := rr.TestStatusCode(200); err != nil {
-		t.Fatal("CORS Get Response:", err)
+		if err := rr.TestStatusCode(200); err != nil {
+			t.Fatal("CORS Get Response:", err)
+		}
+
+		if err := rr.TestHeader("Origin", ""); err != nil {
+			t.Fatal("CORS simple request:", err)
+		}
 	}
 
-	if err := rr.TestHeader("Origin", ""); err != nil {
-		t.Fatal("CORS simple request:", err)
-	}
+	test(testSafeURL)
+	test(testBypassURL)
 }
 
 func TestSimpleRequestPermissive(t *testing.T) {
 	testMux.SetCORSPolicy(PermissiveAccessControl)
 
-	header := make(http.Header)
-	header.Set("Origin", "example.com")
-	rr := newRequestResponse(Get, testSafeURL, header, nil)
+	test := func(url string) {
+		header := make(http.Header)
+		header.Set("Origin", "example.com")
+		rr := newRequestResponse(Get, url, header, nil)
 
-	if err := rr.TestStatusCode(200); err != nil {
-		t.Fatal("CORS Get Response:", err)
+		if err := rr.TestStatusCode(200); err != nil {
+			t.Fatal("CORS Get Response:", err)
+		}
+
+		if err := rr.TestHeader("Access-Control-Allow-Origin", "*"); err != nil {
+			t.Fatal("CORS simple request:", err)
+		}
 	}
 
-	if err := rr.TestHeader("Access-Control-Allow-Origin", "*"); err != nil {
-		t.Fatal("CORS simple request:", err)
-	}
+	test(testSafeURL)
+	test(testBypassURL)
 }
 
 func TestPreflightRequestPermissive(t *testing.T) {

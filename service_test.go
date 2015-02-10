@@ -20,6 +20,7 @@ var (
 	testMBText                   []byte
 	testSafeURL                  string
 	testEchoURL                  string
+	testBypassURL                string
 	testPeople                   []*person
 	testPeopleResourceCollection resourceCollection
 )
@@ -317,6 +318,7 @@ func TestMain(m *testing.M) {
 	testMux.Handle("/employers/{name}", EndpointHandler(&employerResource{}))
 	go http.ListenAndServe(testHost, testMux)
 
+	testBypassURL = testServerAddr + "/bypass"
 	testEchoURL = testServerAddr + "/echo"
 	testSafeURL = testServerAddr + "/people"
 
