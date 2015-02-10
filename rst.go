@@ -100,10 +100,10 @@ format, or for more control over the encoding process of a specific resource.
 
 Compression
 
-rst compresses the payload of responses using the supported algorithm detecte
+rst compresses the payload of responses using the supported algorithm detected
 in the request's Accept-Encoding header.
 
-Payloads under CompressionThreshold bytes are not compressed.
+Payloads under the size defined in the CompressionThreshold const are not compressed.
 
 Both Gzip and Flate are supported.
 
