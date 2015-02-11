@@ -154,6 +154,6 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		} else {
 			headers = resp.Headers
 		}
-		w.Header().Set("Access-Control-Expose-Headers", strings.Join(headers, ", "))
+		w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ", "))
 	}
 }

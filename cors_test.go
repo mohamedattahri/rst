@@ -69,7 +69,7 @@ func TestPreflightRequestPermissive(t *testing.T) {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
-	if err := rr.TestHeader("Access-Control-Expose-Headers", header.Get("Access-Control-Request-Headers")); err != nil {
+	if err := rr.TestHeader("Access-Control-Allow-Headers", header.Get("Access-Control-Request-Headers")); err != nil {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
@@ -117,7 +117,7 @@ func TestPreflightRequestDefault(t *testing.T) {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
-	if err := rr.TestHeader("Access-Control-Expose-Headers", ""); err != nil {
+	if err := rr.TestHeader("Access-Control-Allow-Headers", ""); err != nil {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
@@ -171,7 +171,7 @@ func TestPreflightedRequestCustom(t *testing.T) {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
-	if err := rr.TestHeader("Access-Control-Expose-Headers", "X-Custom-Header-1"); err != nil {
+	if err := rr.TestHeader("Access-Control-Allow-Headers", "X-Custom-Header-1"); err != nil {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
