@@ -37,19 +37,19 @@ type Resource interface {
 }
 
 /*
-Conflicts returns true if the If-Unmodified-Since or the If-Match headers of
-r are conflicting with the current version of resource.
+ValidateConditions returns true if the If-Unmodified-Since or the If-Match headers of
+r are not matching with the current version of resource.
 
 	func (ep *endpoint) Patch(vars RouteVars, r *http.Request) (Resource, error) {
 		resource := db.Lookup(vars.Get("id"))
-		if Conflicts(resource, r) {
-			return nil, PreconditionFailed()
+		if ValidateConditions(resource, r) {
+			return nil, Conflict()
 		}
 
 		// apply the patch safely from here
 	}
 */
-func Conflicts(resource Resource, r *http.Request) bool {
+func ValidateConditions(resource Resource, r *http.Request) bool {
 	if d, err := time.Parse(rfc1123, r.Header.Get("If-Unmodified-Since")); err == nil {
 		if d.Sub(resource.LastModified()) < 0 {
 			return true
@@ -271,7 +271,7 @@ Patcher is implemented by endpoints allowing the PATCH method.
 		}
 
 		// Detect any writing conflicts
-		if rst.Conflicts(resource, r) {
+		if rst.ValidateConditions(resource, r) {
 			return nil, rst.PreconditionFailed()
 		}
 
@@ -310,7 +310,7 @@ Putter is implemented by endpoints allowing the PUT method.
 		}
 
 		// Detect any writing conflicts
-		if rst.Conflicts(resource, r) {
+		if rst.ValidateConditions(resource, r) {
 			return nil, rst.PreconditionFailed()
 		}
 

@@ -38,7 +38,7 @@ func (a *allInterfaces) Delete(vars RouteVars, r *http.Request) error {
 	panic("not implemented")
 }
 
-func TestConflicts(t *testing.T) {
+func TestValidateConditions(t *testing.T) {
 	resource := testPeople[0]
 	var test = func(d time.Time, etag string, expected bool) {
 		header := make(http.Header)
@@ -49,7 +49,7 @@ func TestConflicts(t *testing.T) {
 			header.Set("If-Match", etag)
 		}
 		rr := newRequestResponse(Post, testServerAddr+"/people", header, nil)
-		if b := Conflicts(resource, rr.req); b != expected {
+		if b := ValidateConditions(resource, rr.req); b != expected {
 			t.Error("Conflicts. Wanted:", expected, "Got:", b)
 		}
 	}

@@ -93,6 +93,17 @@ func NotAcceptable() *Error {
 	return err
 }
 
+// Conflict is returned when a request can't be processed due to a conflict with
+// the current state of the resource.
+func Conflict() *Error {
+	err := NewError(
+		http.StatusConflict,
+		"Resource could not be modified",
+		"The request could not be processed due to a conflict with the current state of the resource.",
+	)
+	return err
+}
+
 // PreconditionFailed is returned when one of the conditions the request was
 // made under has failed.
 func PreconditionFailed() *Error {

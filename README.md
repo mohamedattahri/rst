@@ -196,7 +196,7 @@ func (ep *endpoint) Patch(vars rst.RouteVars, r *http.Request) (rst.Resource, er
     }
 
     // Detect any writing conflicts
-    if rst.Conflicts(resource, r) {
+    if rst.ValidateConditions(resource, r) {
 		return nil, rst.PreconditionFailed()
     }
 
@@ -218,7 +218,7 @@ func (ep *endpoint) Put(vars rst.RouteVars, r *http.Request) (rst.Resource, erro
     }
 
     // Detect any writing conflicts
-    if rst.Conflicts(resource, r) {
+    if rst.ValidateConditions(resource, r) {
 		return nil, rst.PreconditionFailed()
     }
 
