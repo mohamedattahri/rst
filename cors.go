@@ -7,13 +7,22 @@ import (
 	"time"
 )
 
+func normalizeHeaderArray(headers []string) []string {
+	for i, name := range headers {
+		headers[i] = http.CanonicalHeaderKey(name)
+	}
+	return headers
+}
+
+var defaultExposedHeaders = []string{http.CanonicalHeaderKey("etag")}
+
 // DefaultAccessControl defines a limited CORS policy that only allows simple
 // cross-origin requests.
 var DefaultAccessControl = &AccessControlResponse{
 	Origin:         "*",
 	Credentials:    true,
 	AllowedHeaders: nil,
-	ExposedHeaders: []string{"etag"},
+	ExposedHeaders: defaultExposedHeaders,
 	Methods:        nil,
 	MaxAge:         24 * time.Hour,
 }
@@ -24,7 +33,7 @@ var PermissiveAccessControl = &AccessControlResponse{
 	Origin:         "*",
 	Credentials:    true,
 	AllowedHeaders: []string{},
-	ExposedHeaders: []string{"etag"},
+	ExposedHeaders: defaultExposedHeaders,
 	Methods:        []string{},
 	MaxAge:         24 * time.Hour,
 }
@@ -135,7 +144,7 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// Exposed headers
 	if len(resp.ExposedHeaders) > 0 {
-		w.Header().Set("Access-Control-Expose-Headers", strings.Join(resp.ExposedHeaders, ", "))
+		w.Header().Set("Access-Control-Expose-Headers", strings.Join(normalizeHeaderArray(resp.ExposedHeaders), ", "))
 	}
 
 	// OPTIONS only
@@ -162,6 +171,6 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		} else {
 			headers = resp.AllowedHeaders
 		}
-		w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ", "))
+		w.Header().Set("Access-Control-Allow-Headers", strings.Join(normalizeHeaderArray(headers), ", "))
 	}
 }
