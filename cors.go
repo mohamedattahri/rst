@@ -14,15 +14,13 @@ func normalizeHeaderArray(headers []string) []string {
 	return headers
 }
 
-var defaultExposedHeaders = []string{http.CanonicalHeaderKey("etag")}
-
 // DefaultAccessControl defines a limited CORS policy that only allows simple
 // cross-origin requests.
 var DefaultAccessControl = &AccessControlResponse{
 	Origin:         "*",
 	Credentials:    true,
 	AllowedHeaders: nil,
-	ExposedHeaders: defaultExposedHeaders,
+	ExposedHeaders: []string{"Etag"),
 	Methods:        nil,
 	MaxAge:         24 * time.Hour,
 }
@@ -33,7 +31,7 @@ var PermissiveAccessControl = &AccessControlResponse{
 	Origin:         "*",
 	Credentials:    true,
 	AllowedHeaders: []string{},
-	ExposedHeaders: defaultExposedHeaders,
+	ExposedHeaders: []string{"Etag"),
 	Methods:        []string{},
 	MaxAge:         24 * time.Hour,
 }
