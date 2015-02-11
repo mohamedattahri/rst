@@ -295,7 +295,7 @@ func (d *Doc) Range(rg *rst.Range) (*rst.ContentRange, rst.Resource, error) {
 
 Marshaler allows you to control the encoding of a resource and return the array of bytes that will form the payload of the response.
 
-`MarshalREST` is to `rst.Marshal` what `MarshalJSON` is to `json.Marshal`.
+`MarshalRST` is to `rst.Marshal` what `MarshalJSON` is to `json.Marshal`.
 
 ```go
 const png = "image/png"
@@ -303,10 +303,10 @@ const png = "image/png"
 type User struct{}
 // assuming User implements rst.Resource
 
-// MarshalREST returns the profile picture of the user if the Accept header
+// MarshalRST returns the profile picture of the user if the Accept header
 // of the request indicates "image/png", and relies on rst.MarshalResource
 // to handle the other cases.
-func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
+func (u *User) MarshalRST(r *http.Request) (string, []byte, error) {
 	accept := rst.ParseAccept(r.Header.Get("Accept"))
 	if accept.Negotiate(png) == png {
 		b, err := ioutil.ReadFile("path/of/user/profile/picture.png")

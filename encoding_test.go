@@ -126,7 +126,7 @@ func TestMarshal(t *testing.T) {
 // Testing whether marshalResource handles the Marshaler interface correctly.
 type customPerson person
 
-func (c *customPerson) MarshalREST(r *http.Request) (string, []byte, error) {
+func (c *customPerson) MarshalRST(r *http.Request) (string, []byte, error) {
 	return "text/plain", []byte("hello, world!"), nil
 }
 func TestMarshalResource(t *testing.T) {

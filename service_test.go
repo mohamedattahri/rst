@@ -52,7 +52,7 @@ func (e *employer) TTL() time.Duration {
 	return 15 * time.Minute
 }
 
-func (e *employer) MarshalREST(r *http.Request) (string, []byte, error) {
+func (e *employer) MarshalRST(r *http.Request) (string, []byte, error) {
 	accept := ParseAccept(r.Header.Get("Accept"))
 	if accept.Negotiate(testContentType) == testContentType {
 		return testContentType, testCannedBytes, nil
@@ -85,7 +85,7 @@ func (p *person) String() string {
 	return fmt.Sprintf("%s %s (%s)", p.Firstname, p.Lastname, p.EyeColor)
 }
 
-func (p *person) MarshalREST(r *http.Request) (string, []byte, error) {
+func (p *person) MarshalRST(r *http.Request) (string, []byte, error) {
 	accept := ParseAccept(r.Header.Get("Accept"))
 	if accept.Negotiate(testContentType) == testContentType {
 		return testContentType, testCannedBytes, nil
@@ -122,7 +122,7 @@ func (c resourceCollection) TTL() time.Duration {
 	return 15 * time.Second
 }
 
-func (c resourceCollection) MarshalREST(r *http.Request) (string, []byte, error) {
+func (c resourceCollection) MarshalRST(r *http.Request) (string, []byte, error) {
 	accept := ParseAccept(r.Header.Get("Accept"))
 	if accept.Negotiate(testContentType) == testContentType {
 		return testContentType, testCannedBytes, nil
@@ -134,7 +134,7 @@ type echoResource struct {
 	content []byte
 }
 
-func (e *echoResource) MarshalREST(r *http.Request) (string, []byte, error) {
+func (e *echoResource) MarshalRST(r *http.Request) (string, []byte, error) {
 	return "text/plain", e.content, nil
 }
 

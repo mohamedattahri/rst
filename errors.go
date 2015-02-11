@@ -221,8 +221,8 @@ func (e *Error) StatusText() string {
 	return http.StatusText(e.Code)
 }
 
-// MarshalREST is implemented to generate an HTML rendering of the error.
-func (e *Error) MarshalREST(r *http.Request) (string, []byte, error) {
+// MarshalRST is implemented to generate an HTML rendering of the error.
+func (e *Error) MarshalRST(r *http.Request) (string, []byte, error) {
 	accept := ParseAccept(r.Header.Get("Accept"))
 	ct := accept.Negotiate("text/html", "*/*")
 	if strings.Contains(ct, "html") || ct == "*/*" {

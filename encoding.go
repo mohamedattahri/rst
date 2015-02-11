@@ -30,10 +30,10 @@ Example:
 	type User struct{}
 	// assuming User implements rst.Resource
 
-	// MarshalREST returns the profile picture of the user if the Accept header
+	// MarshalRST returns the profile picture of the user if the Accept header
 	// of the request indicates "image/png", and relies on rst.MarshalResource
 	// to handle the other cases.
-	func (u *User) MarshalREST(r *http.Request) (string, []byte, error) {
+	func (u *User) MarshalRST(r *http.Request) (string, []byte, error) {
 		accept := ParseAccept(r.Header.Get("Accept"))
 		if accept.Negotiate(png) == png {
 			b, err := ioutil.ReadFile("path/of/user/profile/picture.png")
@@ -43,11 +43,11 @@ Example:
 	}
 */
 type Marshaler interface {
-	// MarshalREST must return the chosen encoding media MIME type and the
+	// MarshalRST must return the chosen encoding media MIME type and the
 	// encoded resource as an array of bytes, or an error.
 	//
-	// MarshalREST is to rst.Marshal what MarshalJSON is to json.Marshal.
-	MarshalREST(*http.Request) (contentType string, data []byte, err error)
+	// MarshalRST is to rst.Marshal what MarshalJSON is to json.Marshal.
+	MarshalRST(*http.Request) (contentType string, data []byte, err error)
 }
 
 var jsonNull = []byte("null")
@@ -61,7 +61,7 @@ var jsonNull = []byte("null")
 // MarshalResource's XML marshaling will always return a valid XML document with a
 // header and a root object, which is not the case for the encoding/xml package.
 //
-// MarshalResource can be called from Marshaler.MarshalREST on the same resource safely.
+// MarshalResource can be called from Marshaler.MarshalRST on the same resource safely.
 func MarshalResource(resource interface{}, r *http.Request) (contentType string, encoded []byte, err error) {
 	accept := ParseAccept(r.Header.Get("Accept"))
 	if len(accept) == 0 {
@@ -124,11 +124,11 @@ func marshalXML(resource interface{}) ([]byte, error) {
 // Marshal negotiates contentType based on the Accept header in r, and returns
 // the encoded version of resource as an array of bytes.
 //
-// Marshal uses resource.MarshalREST if resource implements the Marshaler
+// Marshal uses resource.MarshalRST if resource implements the Marshaler
 // interface, or MarshalResource method if it doesn't.
 func Marshal(resource interface{}, r *http.Request) (contentType string, encoded []byte, err error) {
 	if marshaler, implemented := resource.(Marshaler); implemented {
-		return marshaler.MarshalREST(r)
+		return marshaler.MarshalRST(r)
 	}
 
 	return MarshalResource(resource, r)
