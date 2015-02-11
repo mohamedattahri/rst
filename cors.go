@@ -10,21 +10,23 @@ import (
 // DefaultAccessControl defines a limited CORS policy that only allows simple
 // cross-origin requests.
 var DefaultAccessControl = &AccessControlResponse{
-	Origin:      "*",
-	Credentials: true,
-	Headers:     nil,
-	Methods:     nil,
-	MaxAge:      24 * time.Hour,
+	Origin:         "*",
+	Credentials:    true,
+	AllowedHeaders: nil,
+	ExposedHeaders: []string{"etag"},
+	Methods:        nil,
+	MaxAge:         24 * time.Hour,
 }
 
 // PermissiveAccessControl defines a permissive CORS policy in which all methods
 // and all headers are allowed for all origins.
 var PermissiveAccessControl = &AccessControlResponse{
-	Origin:      "*",
-	Credentials: true,
-	Headers:     []string{},
-	Methods:     []string{},
-	MaxAge:      24 * time.Hour,
+	Origin:         "*",
+	Credentials:    true,
+	AllowedHeaders: []string{},
+	ExposedHeaders: []string{"etag"},
+	Methods:        []string{},
+	MaxAge:         24 * time.Hour,
 }
 
 /*
@@ -79,11 +81,12 @@ func ParseAccessControlRequest(r *http.Request) *AccessControlRequest {
 // AccessControlResponse defines the response headers to a CORS access control
 // request.
 type AccessControlResponse struct {
-	Origin      string
-	Methods     []string // Empty array means any, nil means none.
-	Headers     []string // Empty array means any, nil means none.
-	Credentials bool
-	MaxAge      time.Duration
+	Origin         string
+	ExposedHeaders []string
+	Methods        []string // Empty array means any, nil means none.
+	AllowedHeaders []string // Empty array means any, nil means none.
+	Credentials    bool
+	MaxAge         time.Duration
 }
 
 type accessControlHandler struct {
@@ -130,6 +133,11 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 	w.Header().Set("Access-Control-Allow-Credentials", strconv.FormatBool(resp.Credentials))
 
+	// Exposed headers
+	if len(resp.ExposedHeaders) > 0 {
+		w.Header().Set("Access-Control-Expose-Headers", strings.Join(resp.ExposedHeaders, ", "))
+	}
+
 	// OPTIONS only
 	if strings.ToUpper(r.Method) != Options {
 		return
@@ -147,12 +155,12 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ", "))
 	}
 
-	if len(req.Headers) > 0 && resp.Headers != nil {
+	if len(req.Headers) > 0 && resp.AllowedHeaders != nil {
 		var headers []string
-		if len(resp.Headers) == 0 {
+		if len(resp.AllowedHeaders) == 0 {
 			headers = req.Headers
 		} else {
-			headers = resp.Headers
+			headers = resp.AllowedHeaders
 		}
 		w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ", "))
 	}
