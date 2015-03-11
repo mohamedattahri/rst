@@ -20,6 +20,7 @@ var (
 	testMBText                   []byte
 	testSafeURL                  string
 	testEchoURL                  string
+	testEnvelopeURL              string
 	testBypassURL                string
 	testPeople                   []*person
 	testPeopleResourceCollection resourceCollection
@@ -281,6 +282,27 @@ func (e *employerResource) Get(vars RouteVars, r *http.Request) (Resource, error
 	return nil, NotFound()
 }
 
+var (
+	envelopeProjection = map[string]string{
+		"manufacturer": "Gibson",
+		"model":        "LesPaul 1968",
+	}
+	envelopeTTL          = 10 * time.Minute
+	envelopeETag         = "envelope-etag"
+	envelopeLastModified = time.Date(1989, time.April, 14, 9, 0, 0, 0, time.UTC)
+)
+
+type envelopeEndpoint struct{}
+
+func (e *envelopeEndpoint) Get(vars RouteVars, r *http.Request) (Resource, error) {
+	return NewEnvelope(
+		envelopeProjection,
+		envelopeLastModified,
+		envelopeETag,
+		envelopeTTL,
+	), nil
+}
+
 func TestMain(m *testing.M) {
 	var err error
 
@@ -310,6 +332,7 @@ func TestMain(m *testing.M) {
 	}))
 
 	testMux.Handle("/echo", EndpointHandler(&echoEndpoint{}))
+	testMux.Handle("/envelope", EndpointHandler(&envelopeEndpoint{}))
 	testMux.Handle("/chunked", EndpointHandler(&chunkedEchoEndpoint{}))
 	testMux.Handle("/panic", EndpointHandler(&panicEndpoint{}))
 	testMux.Handle("/people", EndpointHandler(&peopleCollection{}))
@@ -320,6 +343,7 @@ func TestMain(m *testing.M) {
 
 	testBypassURL = testServerAddr + "/bypass"
 	testEchoURL = testServerAddr + "/echo"
+	testEnvelopeURL = testServerAddr + "/envelope"
 	testSafeURL = testServerAddr + "/people"
 
 	os.Exit(m.Run())

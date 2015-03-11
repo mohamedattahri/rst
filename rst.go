@@ -24,7 +24,30 @@ resource or an error.
 
 Resources
 
-A resource must implement the Resource interface. Here's a basic example:
+A resource must implement the rst.Resource interface.
+
+For that, you can either wrap an rst.Envelope around an existing type, or
+define a new type and implement the methods of the interface yourself.
+
+Using a rst.Envelope:
+
+	projection := map[string]string{
+		"ID": "a1-b2-c3-d4-e5-f6",
+		"Name": "Fracis Underwood",
+	}
+	lastModified := time.Now()
+	etag := fmt.Sprintf("%d-%s", lastModified.Unix(), projection["ID"])
+	ttl = 10 * time.Minute
+
+	resource := rst.NewEnvelope{
+		Projection: projection,
+		lastModified,
+		etag,
+		ttl,
+	}
+}
+
+Using a struct:
 
 	type Person struct {
 		ID string
@@ -161,6 +184,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gorilla/context"
 	gorillaMux "github.com/gorilla/mux"
@@ -367,4 +391,44 @@ func (s *Mux) match(r *http.Request) *gorillaMux.RouteMatch {
 		return nil
 	}
 	return &match
+}
+
+// Envelope is a wrapper to allow any interface{} to be used as an rst.Resource
+// interface.
+type Envelope struct {
+	Projection   interface{}
+	lastModified time.Time
+	etag         string
+	ttl          time.Duration
+}
+
+// TTL implements the rst.Resource interface.
+func (e *Envelope) TTL() time.Duration {
+	return e.ttl
+}
+
+// LastModified implements the rst.Resource interface.
+func (e *Envelope) LastModified() time.Time {
+	return e.lastModified
+}
+
+// ETag implements the rst.Resource interface.
+func (e *Envelope) ETag() string {
+	return e.etag
+}
+
+// MarshalRST marshals projection.
+func (e *Envelope) MarshalRST(r *http.Request) (string, []byte, error) {
+	return MarshalResource(e.Projection, r)
+}
+
+// NewEnvelope returns a struct that marshals projection when used as an
+// rst.Resource interface.
+func NewEnvelope(projection interface{}, lastModified time.Time, etag string, ttl time.Duration) *Envelope {
+	return &Envelope{
+		Projection:   projection,
+		lastModified: lastModified,
+		etag:         etag,
+		ttl:          ttl,
+	}
 }

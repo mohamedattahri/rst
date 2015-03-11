@@ -18,7 +18,32 @@ With these interfaces, the complexity behind dealing with all the headers and st
 
 ### Resources
 
-A resource must implement the `Resource` interface. Here's a basic example:
+A resource must implement the `rst.Resource` interface.
+
+For that, you can either wrap an `rst.Envelope` around an existing type,
+or define a new type and implement the methods of the interface yourself.
+
+Using a `rst.Envelope`:
+
+```go
+	projection := map[string]string{
+		"ID": "a1-b2-c3-d4-e5-f6",
+		"Name": "Fracis Underwood",
+	}
+	lastModified := time.Now()
+	etag := fmt.Sprintf("%d-%s", lastModified.Unix(), projection["ID"])
+	ttl = 10 * time.Minute
+
+	resource := rst.NewEnvelope{
+		Projection: projection,
+		lastModified,
+		etag,
+		ttl,
+	}
+}
+```
+
+Using a struct:
 
 ```go
 type Person struct {

@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func newRequest(s string) (*http.Request, error) {
@@ -38,6 +40,19 @@ func (rr *requestResponse) TestStatusCode(code int) error {
 func (rr *requestResponse) TestHasHeader(key string) error {
 	if _, exists := rr.resp.Header[http.CanonicalHeaderKey(key)]; !exists {
 		return fmt.Errorf("expected to find header %s", key)
+	}
+	return nil
+}
+
+func (rr *requestResponse) TestDateHeader(key string, wanted time.Time) error {
+	if rr.err != nil {
+		return rr.err
+	}
+
+	if got, err := time.Parse(rfc1123, rr.resp.Header.Get(http.CanonicalHeaderKey(key))); err != nil {
+		return err
+	} else if !wanted.Equal(got) {
+		return fmt.Errorf("header %s Wanted: %s Got: %s", key, wanted, got)
 	}
 	return nil
 }
@@ -214,5 +229,37 @@ func TestResponseCompression(t *testing.T) {
 		t.Fatal(err)
 	} else if !bytes.Equal(canonical, decompressed) {
 		t.Fatal("deflate Accept-Encoding value: data was decompressed but did not match the expected value")
+	}
+}
+
+func TestEnvelope(t *testing.T) {
+	headers := http.Header{}
+	headers.Set("Accept", "application/json")
+
+	rr := newRequestResponse(Get, testEnvelopeURL, headers, nil)
+
+	if err := rr.TestStatusCode(http.StatusOK); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := rr.TestHeader("ETag", envelopeETag); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := rr.TestDateHeader("Last-Modified", envelopeLastModified); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := rr.TestHasHeader("Expires"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := rr.TestHeader("Content-Type", "application/json; charset=utf-8"); err != nil {
+		t.Fatal(err)
+	}
+
+	b, _ := json.Marshal(envelopeProjection)
+	if err := rr.TestBody(bytes.NewReader(b)); err != nil {
+		t.Fatal(err)
 	}
 }
