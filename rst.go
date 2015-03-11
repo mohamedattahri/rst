@@ -33,7 +33,7 @@ Using a rst.Envelope:
 
 	projection := map[string]string{
 		"ID": "a1-b2-c3-d4-e5-f6",
-		"Name": "Fracis Underwood",
+		"Name": "Francis Underwood",
 	}
 	lastModified := time.Now()
 	etag := fmt.Sprintf("%d-%s", lastModified.Unix(), projection["ID"])
@@ -45,7 +45,6 @@ Using a rst.Envelope:
 		etag,
 		ttl,
 	}
-}
 
 Using a struct:
 
