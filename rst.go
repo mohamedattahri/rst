@@ -40,7 +40,7 @@ Using a rst.Envelope:
 	ttl = 10 * time.Minute
 
 	resource := rst.NewEnvelope{
-		Projection: projection,
+		projection,
 		lastModified,
 		etag,
 		ttl,
