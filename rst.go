@@ -32,32 +32,32 @@ define a new type and implement the methods of the interface yourself.
 Using a rst.Envelope:
 
 	projection := map[string]string{
-		"ID": "a1-b2-c3-d4-e5-f6",
-		"Name": "Francis Underwood",
+		"ID"	: "a1-b2-c3-d4-e5-f6",
+		"Name"	: "Francis Underwood",
 	}
 	lastModified := time.Now()
 	etag := fmt.Sprintf("%d-%s", lastModified.Unix(), projection["ID"])
 	ttl = 10 * time.Minute
 
-	resource := rst.NewEnvelope{
+	resource := rst.NewEnvelope(
 		projection,
 		lastModified,
 		etag,
 		ttl,
-	}
+	)
 
 Using a struct:
 
 	type Person struct {
 		ID string
 		Name string
-		ModifiedDate time.Time `json:"-" xml:"-"`
+		modifiedDate time.Time
 	}
 
 	// This will be helpful for conditional GETs
 	// and to detect conflicts before PATCHs for example.
 	func (p *Person) LastModified() time.Time {
-		return p.ModifiedDate
+		return p.modifiedDate
 	}
 
 	// An ETag inspired by Facebook.
@@ -69,6 +69,12 @@ Using a struct:
 	// improve the cacheability of this resource.
 	func (p *Person) TTL() time.Duration {
 		return 10 * time.Second
+	}
+
+	resource := &Person{
+		ID: "a1-b2-c3-d4-e5-f6",
+		Name: "Francis Underwood",
+		modifiedDate: time.Now(),
 	}
 
 Endpoints
