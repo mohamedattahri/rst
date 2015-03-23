@@ -401,10 +401,15 @@ func (s *Mux) match(r *http.Request) *gorillaMux.RouteMatch {
 // Envelope is a wrapper to allow any interface{} to be used as an rst.Resource
 // interface.
 type Envelope struct {
-	Projection   interface{}
+	projection   interface{}
 	lastModified time.Time
 	etag         string
 	ttl          time.Duration
+}
+
+// Projection of the resource wrapped in this envelope.
+func (e *Envelope) Projection() interface{} {
+	return e.projection
 }
 
 // TTL implements the rst.Resource interface.
@@ -424,14 +429,14 @@ func (e *Envelope) ETag() string {
 
 // MarshalRST marshals projection.
 func (e *Envelope) MarshalRST(r *http.Request) (string, []byte, error) {
-	return MarshalResource(e.Projection, r)
+	return MarshalResource(e.projection, r)
 }
 
 // NewEnvelope returns a struct that marshals projection when used as an
 // rst.Resource interface.
 func NewEnvelope(projection interface{}, lastModified time.Time, etag string, ttl time.Duration) *Envelope {
 	return &Envelope{
-		Projection:   projection,
+		projection:   projection,
 		lastModified: lastModified,
 		etag:         etag,
 		ttl:          ttl,
