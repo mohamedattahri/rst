@@ -20,8 +20,9 @@ return partial responses.
 resource and control the bytes returned in the payload of the response.
 
 - The http.Handler interface can be used to gain direct access to the current
-ResponseWriter and request. However, This is a low level method that should only
-be used when you need to write chunked responses.
+ResponseWriter and request. This is a low level method that should only be used
+when you need to write chunked responses, or if you wish to add specific headers
+such a Content-Disposition, etc.
 */
 type Resource interface {
 	ETag() string            // ETag identifying the current version of the resource.
