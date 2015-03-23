@@ -276,7 +276,7 @@ func newResponseWriter(w http.ResponseWriter) *responseWriter {
 	return &responseWriter{w}
 }
 
-const varsKey = "__rest__vars"
+const varsKey = "__rst__vars"
 
 func getVars(r *http.Request) (vars RouteVars) {
 	if v := context.Get(r, varsKey); v != nil {
