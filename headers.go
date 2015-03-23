@@ -139,6 +139,16 @@ func (r *Range) Len() uint64 {
 	return r.To - r.From
 }
 
+// validate the range for ranger.
+func (r *Range) validate(ranger Ranger) error {
+	for _, u := range ranger.Units() {
+		if strings.EqualFold(r.Unit, u) {
+			return nil
+		}
+	}
+	return fmt.Errorf("unsupported range unit %s", r.Unit)
+}
+
 /*
 adjust will correct r to fall within the boundaries of ranger. If r does not
 overlap the current extend of ranger, a RequestedRangeNotSatifiable error will
@@ -148,16 +158,6 @@ Range entities are always adjusted before they are passed to Ranger.Range
 implementer.
 */
 func (r *Range) adjust(ranger Ranger) error {
-	supported := false
-	for _, u := range ranger.Units() {
-		if strings.EqualFold(r.Unit, u) {
-			supported = true
-			break
-		}
-	}
-	if !supported {
-		return errUnsupportedRangeUnit
-	}
 
 	count := ranger.Count()
 	if r.From > count {

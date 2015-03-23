@@ -1,17 +1,10 @@
 package rst
 
 import (
-	"errors"
 	"net/http"
 	"strings"
 	"time"
 )
-
-/*
-errUnsupportedRangeUnit is used to ignore a Range header when handling
-a Get request, because the range unit requested is unsupported.
-*/
-var errUnsupportedRangeUnit = errors.New("unsupported range unit")
 
 /*
 Resource represents a resource exposed on a REST service using an Endpoint.
@@ -215,11 +208,12 @@ func (f getFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeResource(resource, w, r)
 		return
 	}
-	w.Header().Set("Accept-Range", strings.Join(ranger.Units(), ", "))
+	w.Header().Set("Accept-Ranges", strings.Join(ranger.Units(), ", "))
 
-	// Check if request contains a valid Range header
+	// Check if request contains a valid Range header, and check whether it's
+	// a valid range.
 	rg, err := ParseRange(r.Header.Get("Range"))
-	if err != nil {
+	if err != nil || rg.validate(ranger) != nil {
 		writeResource(resource, w, r)
 		return
 	}
@@ -236,11 +230,7 @@ func (f getFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rg.adjust(ranger); err != nil {
-		if err == errUnsupportedRangeUnit {
-			writeResource(resource, w, r)
-		} else {
-			writeError(err, w, r)
-		}
+		writeError(err, w, r)
 		return
 	}
 
