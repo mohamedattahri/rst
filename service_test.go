@@ -282,14 +282,25 @@ func (e *employerResource) Get(vars RouteVars, r *http.Request) (Resource, error
 	return nil, NotFound()
 }
 
+type testProjection map[string]string
+
+func (t testProjection) MarshalRST(r *http.Request) (string, []byte, error) {
+	accept := ParseAccept(r.Header.Get("Accept"))
+	if accept.Negotiate("text/plain") == "text/plain" {
+		return "text/plain", []byte(envelopeTextProjection), nil
+	}
+	return MarshalResource(t, r)
+}
+
 var (
-	envelopeProjection = map[string]string{
+	envelopeProjection = testProjection{
 		"manufacturer": "Gibson",
 		"model":        "LesPaul 1968",
 	}
-	envelopeTTL          = 10 * time.Minute
-	envelopeETag         = "envelope-etag"
-	envelopeLastModified = time.Date(1989, time.April, 14, 9, 0, 0, 0, time.UTC)
+	envelopeTextProjection = "hello, world"
+	envelopeTTL            = 10 * time.Minute
+	envelopeETag           = "envelope-etag"
+	envelopeLastModified   = time.Date(1989, time.April, 14, 9, 0, 0, 0, time.UTC)
 )
 
 type envelopeEndpoint struct{}

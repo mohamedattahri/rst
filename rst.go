@@ -429,7 +429,7 @@ func (e *Envelope) ETag() string {
 
 // MarshalRST marshals projection.
 func (e *Envelope) MarshalRST(r *http.Request) (string, []byte, error) {
-	return MarshalResource(e.projection, r)
+	return Marshal(e.projection, r)
 }
 
 // NewEnvelope returns a struct that marshals projection when used as an

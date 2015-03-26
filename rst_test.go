@@ -233,33 +233,39 @@ func TestResponseCompression(t *testing.T) {
 }
 
 func TestEnvelope(t *testing.T) {
-	headers := http.Header{}
-	headers.Set("Accept", "application/json")
 
-	rr := newRequestResponse(Get, testEnvelopeURL, headers, nil)
+	var test = func(accept string, body io.Reader) {
+		headers := http.Header{}
+		headers.Set("Accept", accept)
 
-	if err := rr.TestStatusCode(http.StatusOK); err != nil {
-		t.Fatal(err)
-	}
+		rr := newRequestResponse(Get, testEnvelopeURL, headers, nil)
 
-	if err := rr.TestHeader("ETag", envelopeETag); err != nil {
-		t.Fatal(err)
-	}
+		if err := rr.TestStatusCode(http.StatusOK); err != nil {
+			t.Fatal(err)
+		}
 
-	if err := rr.TestDateHeader("Last-Modified", envelopeLastModified); err != nil {
-		t.Fatal(err)
-	}
+		if err := rr.TestHeader("ETag", envelopeETag); err != nil {
+			t.Fatal(err)
+		}
 
-	if err := rr.TestHasHeader("Expires"); err != nil {
-		t.Fatal(err)
-	}
+		if err := rr.TestDateHeader("Last-Modified", envelopeLastModified); err != nil {
+			t.Fatal(err)
+		}
 
-	if err := rr.TestHeader("Content-Type", "application/json; charset=utf-8"); err != nil {
-		t.Fatal(err)
+		if err := rr.TestHasHeader("Expires"); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := rr.TestHeaderContains("Content-Type", accept); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := rr.TestBody(body); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	b, _ := json.Marshal(envelopeProjection)
-	if err := rr.TestBody(bytes.NewReader(b)); err != nil {
-		t.Fatal(err)
-	}
+	test("application/json", bytes.NewReader(b))
+	test("text/plain", bytes.NewReader([]byte(envelopeTextProjection)))
 }
