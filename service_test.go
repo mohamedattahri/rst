@@ -318,13 +318,13 @@ func TestMain(m *testing.M) {
 	var err error
 
 	// 1MB text
-	testMBText, err = ioutil.ReadFile("testdata/1mb.txt")
+	testMBText, err = ioutil.ReadFile("internal/testdata/1mb.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// DB
-	rawdb, err := ioutil.ReadFile("testdata/100objects.json")
+	rawdb, err := ioutil.ReadFile("internal/testdata/100objects.json")
 	if err != nil {
 		log.Fatal(err)
 	}

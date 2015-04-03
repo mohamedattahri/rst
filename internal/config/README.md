@@ -1,0 +1,1 @@
+Use bootstrap-config.js to re-build bootstrap CSS embedded in internal/assets/error.html

@@ -2,7 +2,7 @@
 
 // rst relies on esc (https://github.com/mjibson/esc) to embed static resources
 // with go generate (requires go 1.4 or more recent).
-//go:generate esc -pkg=rst -o=assets.go ./assets
+//go:generate esc -pkg=assets -o=internal/assets/assets.go ./internal/assets
 
 /*
 Package rst implements tools and methods to expose resources in a RESTFul

@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+
+	"github.com/mohamedattahri/rst/internal/assets"
 )
 
 // ErrorHandler is a wrapper that allows any Go error to implement the
@@ -285,9 +287,9 @@ func NewError(code int, reason, description string) *Error {
 var errorTemplate *template.Template
 
 func init() {
-	// errorTemplate is based on data embedded in assets.go using go generate
-	// and the esc tool (https://github.com/mjibson/esc).
-	f, err := rstFS(false).Open("/assets/error.html")
+	// errorTemplate is based on data embedded in interal/assets/assets.go
+	// using go generate and https://github.com/mjibson/esc.
+	f, err := assets.FS(false).Open("/internal/assets/error.html")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -295,7 +297,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	errorTemplate, err = template.New("rst.errorTemplate").Parse(string(b))
+	errorTemplate, err = template.New("internal/assets/error.html").Parse(string(b))
 	if err != nil {
 		log.Fatal(err)
 	}
