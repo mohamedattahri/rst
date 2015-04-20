@@ -361,9 +361,9 @@ func (s *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setVars(r, RouteVars(match.Vars))
+	defer delVars(r)
 	if handler, valid := match.Handler.(*endpointHandler); valid {
-		setVars(r, RouteVars(match.Vars))
-		defer delVars(r)
 		if s.ac != nil {
 			newAccessControlHandler(handler.endpoint, s.ac).ServeHTTP(w, r)
 		}
@@ -372,7 +372,7 @@ func (s *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if s.ac != nil {
 			newAccessControlHandler(nil, s.ac).ServeHTTP(w, r)
 		}
-		match.Handler.ServeHTTP(w, r)
+		match.Handler.ServeHTTP(newResponseWriter(w), r)
 	}
 
 }
