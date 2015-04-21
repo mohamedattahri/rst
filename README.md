@@ -6,6 +6,10 @@
 
 `rst` implements tools and methods to expose resources in a RESTFul service.
 
+## Test Coverage
+
+`go test -cover` reports **82.9%**.
+
 ## Getting started
 
 The idea behind `rst` is to have endpoints and resources implement interfaces to add features.
