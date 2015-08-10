@@ -102,7 +102,8 @@ func marshalXML(resource interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if bytes.Equal(b[:len(xml.Header)], []byte(xml.Header)) {
+
+	if len(b) >= len(xml.Header) && bytes.Equal(b[:len(xml.Header)], []byte(xml.Header)) {
 		return b, err
 	}
 
