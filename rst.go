@@ -537,6 +537,12 @@ type Envelope struct {
 	lastModified time.Time
 	etag         string
 	ttl          time.Duration
+	header       http.Header
+}
+
+// Header returns the list of headers that will be added to the ResponseWriter.
+func (e *Envelope) Header() http.Header {
+	return e.header
 }
 
 // Projection of the resource wrapped in this envelope.
@@ -564,6 +570,51 @@ func (e *Envelope) MarshalRST(r *http.Request) (string, []byte, error) {
 	return Marshal(e.projection, r)
 }
 
+// ServeHTTP implements http.Handler. e.MarshalRST will be called internally.
+func (e *Envelope) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	contentType, b, err := e.MarshalRST(r)
+	if err != nil {
+		writeError(err, w, r)
+		return
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	if e.header != nil {
+		for key, values := range e.header {
+			for _, value := range values {
+				w.Header().Add(key, value)
+			}
+		}
+	}
+
+	if compression := getCompressionFormat(b, r); compression != "" {
+		w.Header().Set("Content-Encoding", compression)
+		w.Header().Add("Vary", "Accept-Encoding")
+	}
+
+	if strings.ToUpper(r.Method) == Post {
+		w.WriteHeader(http.StatusCreated)
+		w.Write(b)
+		return
+	}
+
+	if len(b) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if w.Header().Get("Content-Range") != "" {
+		w.WriteHeader(http.StatusPartialContent)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	if strings.ToUpper(r.Method) == Head {
+		return
+	}
+	w.Write(b)
+}
+
 // NewEnvelope returns a struct that marshals projection when used as an
 // rst.Resource interface.
 func NewEnvelope(projection interface{}, lastModified time.Time, etag string, ttl time.Duration) *Envelope {
@@ -572,5 +623,6 @@ func NewEnvelope(projection interface{}, lastModified time.Time, etag string, tt
 		lastModified: lastModified,
 		etag:         etag,
 		ttl:          ttl,
+		header:       make(http.Header),
 	}
 }
