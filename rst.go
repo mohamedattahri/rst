@@ -9,7 +9,7 @@ Package rst implements tools and methods to expose resources in a RESTFul
 web service.
 
 The idea behind rst is to have endpoints and resources implement interfaces to
-add features.
+support HTTP features.
 
 Endpoints can implement Getter, Poster, Patcher, Putter or Deleter to
 respectively allow the HEAD/GET, POST, PATCH, PUT, and DELETE HTTP methods.
@@ -81,6 +81,30 @@ Endpoints
 
 An endpoint is an access point to a resource in your service.
 
+You can either define an endpoint by defining handlers for different methods
+sharing the same pattern, or by submitting a type that implements Getter, Poster,
+Patcher, Putter, Deleter and/or Prefligher.
+
+Using rst.Mux:
+
+	mux := rst.NewMux()
+	mux.Get("/people/{id:\\d+}", func(vars RouteVars, r *http.Request) (rst.Resource, error) {
+		resource := database.Find(vars.Get("id"))
+		if resource == nil {
+			return nul, rst.NotFound()
+		}
+		return resource, nil
+	})
+	mux.Delete("/people/{id:\\d+}", func(vars RouteVars, r *http.Request) error {
+		resource := database.Find(vars.Get("id"))
+		if resource == nil {
+			return nul, rst.NotFound()
+		}
+		return resource.Delete()
+	})
+
+Using a struct:
+
 In the following example, PersonEP implements Getter and is therefore able to
 handle GET requests.
 
@@ -94,8 +118,13 @@ handle GET requests.
 		return resource, nil
 	}
 
-Get uses the id variable extracted from the URL to load a resource from the
-database, or return a 404 Not Found error.
+	func (ep *PersonEP) Delete(vars rst.RouteVars, r *http.Request) error {
+		resource := database.Find(vars.Get("id"))
+		if resource == nil {
+			return nil, rst.NotFound()
+		}
+		return resource.Delete()
+	}
 
 Routing
 
@@ -294,19 +323,21 @@ func delVars(r *http.Request) {
 // Mux is an HTTP request multiplexer. It matches the URL of each incoming
 // requests against a list of registered REST endpoints.
 type Mux struct {
-	Debug  bool // Set to true to display stack traces and debug info in errors.
-	Logger *log.Logger
-	header http.Header
-	ac     *AccessControlResponse
-	m      *gorillaMux.Router
+	Debug     bool // Set to true to display stack traces and debug info in errors.
+	Logger    *log.Logger
+	header    http.Header
+	ac        *AccessControlResponse
+	m         *gorillaMux.Router
+	endpoints map[string]mapEndpoint
 }
 
 // NewMux initializes a new REST multiplexer.
 func NewMux() *Mux {
 	s := &Mux{
-		Logger: log.New(os.Stdout, "rst: ", log.LstdFlags),
-		header: make(http.Header),
-		m:      gorillaMux.NewRouter(),
+		Logger:    log.New(os.Stdout, "rst: ", log.LstdFlags),
+		header:    make(http.Header),
+		m:         gorillaMux.NewRouter(),
+		endpoints: make(map[string]mapEndpoint),
 	}
 	return s
 }
@@ -386,6 +417,40 @@ func (s *Mux) Handle(pattern string, handler http.Handler) {
 	s.m.Handle(pattern, handler)
 }
 
+// Handle registers the handler function for the given pattern.
+func (s *Mux) handleMethod(pattern string, method string, handler http.Handler) {
+	if _, ok := s.endpoints[pattern]; !ok {
+		s.endpoints[pattern] = make(mapEndpoint)
+		s.m.Handle(pattern, EndpointHandler(s.endpoints[pattern]))
+	}
+	s.endpoints[pattern][method] = handler
+}
+
+// Get registers handler for GET requests on the given pattern.
+func (s *Mux) Get(pattern string, handler GetFunc) {
+	s.handleMethod(pattern, Get, handler)
+}
+
+// Post registers handler for POST requests on the given pattern.
+func (s *Mux) Post(pattern string, handler PostFunc) {
+	s.handleMethod(pattern, Post, handler)
+}
+
+// Put registers handler for PUT requests on the given pattern.
+func (s *Mux) Put(pattern string, handler PutFunc) {
+	s.handleMethod(pattern, Put, handler)
+}
+
+// Patch registers handler for PATCH requests on the given pattern.
+func (s *Mux) Patch(pattern string, handler PatchFunc) {
+	s.handleMethod(pattern, Put, handler)
+}
+
+// Delete registers handler for DELETE requests on the given pattern.
+func (s *Mux) Delete(pattern string, handler DeleteFunc) {
+	s.handleMethod(pattern, Delete, handler)
+}
+
 // match returns the route
 func (s *Mux) match(r *http.Request) *gorillaMux.RouteMatch {
 	var match gorillaMux.RouteMatch
@@ -393,6 +458,76 @@ func (s *Mux) match(r *http.Request) *gorillaMux.RouteMatch {
 		return nil
 	}
 	return &match
+}
+
+// mapEndpoint defines HTTP handlers for a given set of
+type mapEndpoint map[string]http.Handler
+
+// allowedMethods returns an array containing the HTTP methods supported by
+// this endpoint.
+func (e mapEndpoint) allowedMethods() []string {
+	var methods []string
+	for method := range e {
+		methods = append(methods, method)
+	}
+	if _, ok := e[Get]; ok {
+		methods = append(methods, Head)
+	}
+	return methods
+}
+
+// validateMethod returns an error if the method of r is not allowed by this
+// endpoint.
+func (e mapEndpoint) validateMethod(r *http.Request) error {
+	if _, ok := e[r.Method]; !ok {
+		return MethodNotAllowed(r.Method, e.allowedMethods())
+	}
+	return nil
+}
+
+// Get implements the Getter interface.
+func (e mapEndpoint) Get(vars RouteVars, r *http.Request) (Resource, error) {
+	if err := e.validateMethod(r); err != nil {
+		return nil, err
+	}
+	fn := e[r.Method].(GetFunc)
+	return fn(vars, r)
+}
+
+// Post implements the Poster interface.
+func (e mapEndpoint) Post(vars RouteVars, r *http.Request) (Resource, string, error) {
+	if err := e.validateMethod(r); err != nil {
+		return nil, "", err
+	}
+	fn := e[r.Method].(PostFunc)
+	return fn(vars, r)
+}
+
+// Put implements the Putter interface.
+func (e mapEndpoint) Put(vars RouteVars, r *http.Request) (Resource, error) {
+	if err := e.validateMethod(r); err != nil {
+		return nil, err
+	}
+	fn := e[r.Method].(PutFunc)
+	return fn(vars, r)
+}
+
+// Patch implements the Patcher interface.
+func (e mapEndpoint) Patch(vars RouteVars, r *http.Request) (Resource, error) {
+	if err := e.validateMethod(r); err != nil {
+		return nil, err
+	}
+	fn := e[r.Method].(PatchFunc)
+	return fn(vars, r)
+}
+
+// Delete implements the Deleter interface.
+func (e mapEndpoint) Deleter(vars RouteVars, r *http.Request) error {
+	if err := e.validateMethod(r); err != nil {
+		return nil
+	}
+	fn := e[r.Method].(DeleteFunc)
+	return fn(vars, r)
 }
 
 // Envelope is a wrapper to allow any interface{} to be used as an rst.Resource

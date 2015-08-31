@@ -301,17 +301,22 @@ var (
 	envelopeTTL            = 10 * time.Minute
 	envelopeETag           = "envelope-etag"
 	envelopeLastModified   = time.Date(1989, time.April, 14, 9, 0, 0, 0, time.UTC)
+	envelopeHeaders        = http.Header{
+		"X-Envelope-Header": []string{"some-value"},
+	}
 )
 
 type envelopeEndpoint struct{}
 
 func (e *envelopeEndpoint) Get(vars RouteVars, r *http.Request) (Resource, error) {
-	return NewEnvelope(
+	evlp := NewEnvelope(
 		envelopeProjection,
 		envelopeLastModified,
 		envelopeETag,
 		envelopeTTL,
-	), nil
+	)
+	evlp.header = envelopeHeaders
+	return evlp, nil
 }
 
 func TestMain(m *testing.M) {

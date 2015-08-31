@@ -13,14 +13,14 @@ There are other interfaces that can be implemented by a resource to either
 control its projection in a response payload, or add support for advanced HTTP
 features:
 
-- The Ranger interface adds support for range requests et allows the resource to
+- The Ranger interface adds support for range requests and allows the resource to
 return partial responses.
 
 - The Marshaler interface allows you to customize the encoding process of the
 resource and control the bytes returned in the payload of the response.
 
-- The http.Handler interface can be used to gain direct access to the current
-ResponseWriter and request. This is a low level method that should only be used
+- The http.Handler interface can be used to gain direct access to the
+ResponseWriter and Request. This is a low level method that should only be used
 when you need to write chunked responses, or if you wish to add specific headers
 such a Content-Disposition, etc.
 */
@@ -92,8 +92,8 @@ type Ranger interface {
 	Range(*Range) (*ContentRange, Resource, error)
 }
 
-func writeError(e error, w http.ResponseWriter, r *http.Request) {
-	ErrorHandler(e).ServeHTTP(w, r)
+func writeError(err error, w http.ResponseWriter, r *http.Request) {
+	ErrorHandler(err).ServeHTTP(w, r)
 }
 
 func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
@@ -163,7 +163,6 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 	if strings.ToUpper(r.Method) == Head {
 		return
 	}
-
 	w.Write(b)
 }
 
@@ -189,11 +188,14 @@ type Getter interface {
 	Get(RouteVars, *http.Request) (Resource, error)
 }
 
-// getFunc is an adapter to use ordinary functions as HTTP Get handlers.
-type getFunc func(RouteVars, *http.Request) (Resource, error)
+// GetFunc allows a Getter.Get method to be used an http.Handler.
+type GetFunc func(RouteVars, *http.Request) (Resource, error)
 
-func (f getFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	resource, err := f(getVars(r), r)
+// ServeHTTP implements the http.Handler interface.
+func (f GetFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	vars := getVars(r)
+
+	resource, err := f(vars, r)
 	if err != nil {
 		writeError(err, w, r)
 		return
@@ -275,10 +277,11 @@ type Patcher interface {
 	Patch(RouteVars, *http.Request) (Resource, error)
 }
 
-// patchFunc is an adapter to use ordinary functions as HTTP PATCH handlers.
-type patchFunc func(RouteVars, *http.Request) (Resource, error)
+// PatchFunc allows a Patcher.Patch method to be used an http.Handler.
+type PatchFunc func(RouteVars, *http.Request) (Resource, error)
 
-func (f patchFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP implements the http.Handler interface.
+func (f PatchFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resource, err := f(getVars(r), r)
 	if err != nil {
 		writeError(err, w, r)
@@ -314,10 +317,11 @@ type Putter interface {
 	Put(RouteVars, *http.Request) (Resource, error)
 }
 
-// putFunc is an adapter to use ordinary functions as HTTP PUT handlers.
-type putFunc func(RouteVars, *http.Request) (Resource, error)
+// PutFunc allows a Putter.Put method to be used an http.Handler.
+type PutFunc func(RouteVars, *http.Request) (Resource, error)
 
-func (f putFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP implements the http.Handler interface.
+func (f PutFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resource, err := f(getVars(r), r)
 	if err != nil {
 		writeError(err, w, r)
@@ -348,10 +352,11 @@ type Poster interface {
 	Post(RouteVars, *http.Request) (resource Resource, location string, err error)
 }
 
-// postFunc is an adapter to use ordinary functions as HTTP POST handlers.
-type postFunc func(RouteVars, *http.Request) (Resource, string, error)
+// PostFunc allows a Poster.Post method to be used an http.Handler.
+type PostFunc func(RouteVars, *http.Request) (Resource, string, error)
 
-func (f postFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP implements the http.Handler interface.
+func (f PostFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resource, location, err := f(getVars(r), r)
 	if err != nil {
 		writeError(err, w, r)
@@ -375,10 +380,11 @@ type Deleter interface {
 	Delete(RouteVars, *http.Request) error
 }
 
-// deleteFunc is an adapter to use ordinary functions as HTTP DELETE handlers.
-type deleteFunc func(RouteVars, *http.Request) error
+// DeleteFunc allows a Deleter.Deleter method to be used an http.Handler.
+type DeleteFunc func(RouteVars, *http.Request) error
 
-func (f deleteFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP implements the http.Handler interface.
+func (f DeleteFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := f(getVars(r), r); err != nil {
 		writeError(err, w, r)
 		return
@@ -430,23 +436,23 @@ func getMethodHandler(endpoint Endpoint, method string, header http.Header) http
 		return optionsHandler(endpoint)
 	case Head, Get:
 		if i, supported := endpoint.(Getter); supported {
-			return getFunc(i.Get)
+			return GetFunc(i.Get)
 		}
 	case Patch:
 		if i, supported := endpoint.(Patcher); supported {
-			return patchFunc(i.Patch)
+			return PatchFunc(i.Patch)
 		}
 	case Put:
 		if i, supported := endpoint.(Putter); supported {
-			return putFunc(i.Put)
+			return PutFunc(i.Put)
 		}
 	case Post:
 		if i, supported := endpoint.(Poster); supported {
-			return postFunc(i.Post)
+			return PostFunc(i.Post)
 		}
 	case Delete:
 		if i, supported := endpoint.(Deleter); supported {
-			return deleteFunc(i.Delete)
+			return DeleteFunc(i.Delete)
 		}
 	}
 	return nil
@@ -454,8 +460,18 @@ func getMethodHandler(endpoint Endpoint, method string, header http.Header) http
 
 var supportedMethods = []string{Head, Get, Patch, Put, Post, Delete}
 
+// methodLister is implements by endpoints that need to control the list of
+// HTTP methods they support.
+type methodLister interface {
+	allowedMethods() []string
+}
+
 // AllowedMethods returns the list of HTTP methods allowed by this endpoint.
 func AllowedMethods(endpoint Endpoint) (methods []string) {
+	if lister, ok := endpoint.(methodLister); ok {
+		return lister.allowedMethods()
+	}
+
 	for _, method := range supportedMethods {
 		if getMethodHandler(endpoint, method, nil) != nil {
 			methods = append(methods, method)

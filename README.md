@@ -1,18 +1,17 @@
 # github.com/mohamedattahri/rst
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mohamedattahri/rst?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-[![Build Status](https://travis-ci.org/mohamedattahri/rst.svg?branch=master)](https://travis-ci.org/mohamedattahri/rst)  [![GoDoc](https://godoc.org/github.com/mohamedattahri/rst?status.svg)](https://godoc.org/github.com/mohamedattahri/rst)
+[![GoDoc](https://godoc.org/github.com/mohamedattahri/rst?status.svg)](https://godoc.org/github.com/mohamedattahri/rst)
+[![Build Status](https://travis-ci.org/mohamedattahri/rst.svg?branch=master)](https://travis-ci.org/mohamedattahri/rst)  
 
 `rst` implements tools and methods to expose resources in a RESTFul service.
 
 ## Test Coverage
 
-`go test -cover` reports **82.9%**.
+`go test -cover` reports **78.3%**.
 
 ## Getting started
 
-The idea behind `rst` is to have endpoints and resources implement interfaces to add features.
+The idea behind `rst` is to have endpoints and resources implement interfaces to add support for HTTP features.
 
 Endpoints can implement [Getter](#getter), [Poster](#poster), [Patcher](#patcher), [Putter](#putter) or [Deleter](#deleter) to respectively allow the `HEAD`/`GET`, `POST`, `PATCH`, `PUT`, and `DELETE` HTTP methods.
 
@@ -83,7 +82,30 @@ resource := &Person{
 
 An endpoint is an access point to a resource in your service.
 
-In the following example, `PersonEP` implements `Getter` and is therefore able to handle `GET` requests.
+You can either define an endpoint by defining handlers for different methods
+sharing the same pattern, or by submitting a type that implements `Getter`, `Poster`,
+`Patcher`, `Putter`, `Deleter` and/or `Prefligher`.
+
+Using rst.Mux:
+```go
+mux := rst.NewMux()
+mux.Get("/people/{id:\\d+}", func(vars RouteVars, r *http.Request) (rst.Resource, error) {
+	resource := database.Find(vars.Get("id"))
+	if resource == nil {
+		return nul, rst.NotFound()
+	}
+	return resource, nil
+})
+mux.Delete("/people/{id:\\d+}", func(vars RouteVars, r *http.Request) error {
+	resource := database.Find(vars.Get("id"))
+	if resource == nil {
+		return nul, rst.NotFound()
+	}
+	return resource.Delete()
+})
+```
+
+Using a struct:
 
 ```go
 type PersonEP struct {}
@@ -95,9 +117,15 @@ func (ep *PersonEP) Get(vars rst.RouteVars, r *http.Request) (rst.Resource, erro
 	}
 	return resource, nil
 }
-```
 
-`Get` uses the `id` variable extracted from the URL to load a resource from the database, or return a `404 Not Found` error.
+func (ep *PersonEP) Delete(vars rst.RouteVars, r *http.Request) error {
+	resource := database.Find(vars.Get("id"))
+	if resource == nil {
+		return nil, rst.NotFound()
+	}
+	return resource.Delete()
+}
+```
 
 ### Routing
 

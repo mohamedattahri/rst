@@ -159,6 +159,45 @@ func TestBypass(t *testing.T) {
 	}
 }
 
+func TestMuxMethodHandlers(t *testing.T) {
+	testMux.Get("/muxMethodHandler/{name}", func(vars RouteVars, r *http.Request) (Resource, error) {
+		return nil, nil
+	})
+	testMux.Post("/muxMethodHandler/{name}", func(vars RouteVars, r *http.Request) (Resource, string, error) {
+		return nil, "", nil
+	})
+
+	rr := newRequestResponse(Options, testServerAddr+"/muxMethodHandler/blabla", nil, nil)
+	if err := rr.TestHeaderContains("Allow", Head); err != nil {
+		t.Fatal(err)
+	}
+	if err := rr.TestHeaderContains("Allow", Get); err != nil {
+		t.Fatal(err)
+	}
+	if err := rr.TestHeaderContains("Allow", Post); err != nil {
+		t.Fatal(err)
+	}
+	if err := rr.TestHeaderContains("Allow", Patch); err == nil {
+		t.Fatal("Patch not expected to be found in headers")
+	}
+	if err := rr.TestHeaderContains("Allow", Put); err == nil {
+		t.Fatal("Patch not expected to be found in headers")
+	}
+	if err := rr.TestHeaderContains("Allow", Delete); err == nil {
+		t.Fatal("Patch not expected to be found in headers")
+	}
+
+	testMux.Put("/employers/{name}", func(vars RouteVars, r *http.Request) (Resource, error) {
+		return nil, nil
+	})
+	testMux.Patch("/employers/{name}", func(vars RouteVars, r *http.Request) (Resource, error) {
+		return nil, nil
+	})
+	testMux.Delete("/employers/{name}", func(vars RouteVars, r *http.Request) error {
+		return nil
+	})
+}
+
 func TestResponseCompression(t *testing.T) {
 	header := make(http.Header)
 
@@ -233,12 +272,8 @@ func TestResponseCompression(t *testing.T) {
 }
 
 func TestEnvelope(t *testing.T) {
-
 	var test = func(accept string, body io.Reader) {
-		headers := http.Header{}
-		headers.Set("Accept", accept)
-
-		rr := newRequestResponse(Get, testEnvelopeURL, headers, nil)
+		rr := newRequestResponse(Get, testEnvelopeURL, http.Header{"Accept": []string{accept}}, nil)
 
 		if err := rr.TestStatusCode(http.StatusOK); err != nil {
 			t.Fatal(err)
@@ -257,6 +292,10 @@ func TestEnvelope(t *testing.T) {
 		}
 
 		if err := rr.TestHeaderContains("Content-Type", accept); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := rr.TestHeader("X-Envelope-Header", envelopeHeaders.Get("X-Envelope-Header")); err != nil {
 			t.Fatal(err)
 		}
 

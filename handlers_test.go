@@ -13,11 +13,11 @@ import (
 
 var (
 	tOptionsHandler = reflect.TypeOf(optionsHandler(nil))
-	tGetFunc        = reflect.TypeOf(new(getFunc)).Elem()
-	tPostFunc       = reflect.TypeOf(new(postFunc)).Elem()
-	tPatchFunc      = reflect.TypeOf(new(patchFunc)).Elem()
-	tPutFunc        = reflect.TypeOf(new(putFunc)).Elem()
-	tDeleteFunc     = reflect.TypeOf(new(deleteFunc)).Elem()
+	tGetFunc        = reflect.TypeOf(new(GetFunc)).Elem()
+	tPostFunc       = reflect.TypeOf(new(PostFunc)).Elem()
+	tPatchFunc      = reflect.TypeOf(new(PatchFunc)).Elem()
+	tPutFunc        = reflect.TypeOf(new(PutFunc)).Elem()
+	tDeleteFunc     = reflect.TypeOf(new(DeleteFunc)).Elem()
 )
 
 type allInterfaces struct{}

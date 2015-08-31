@@ -185,7 +185,7 @@ func InternalServerError(reason, description string, captureStack bool) *Error {
 
 // Error represents an HTTP error, with a status code, a reason and a
 // description.
-// Error is both a valid Go error and a client of the http.Handler interface.
+// Error implements both the error and http.Handler interfaces.
 //
 // Header can be used to specify headers that will be written in the HTTP
 // response generated from this error.
