@@ -159,6 +159,15 @@ func TestBypass(t *testing.T) {
 	}
 }
 
+func TestMapEndpoint(t *testing.T) {
+	mendp := make(mapEndpoint)
+	_ = Getter(mendp)
+	_ = Poster(mendp)
+	_ = Putter(mendp)
+	_ = Patcher(mendp)
+	_ = Deleter(mendp)
+}
+
 func TestMuxMethodHandlers(t *testing.T) {
 	testMux.Get("/muxMethodHandler/{name}", func(vars RouteVars, r *http.Request) (Resource, error) {
 		return nil, nil

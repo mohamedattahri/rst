@@ -522,7 +522,7 @@ func (e mapEndpoint) Patch(vars RouteVars, r *http.Request) (Resource, error) {
 }
 
 // Delete implements the Deleter interface.
-func (e mapEndpoint) Deleter(vars RouteVars, r *http.Request) error {
+func (e mapEndpoint) Delete(vars RouteVars, r *http.Request) error {
 	if err := e.validateMethod(r); err != nil {
 		return nil
 	}
