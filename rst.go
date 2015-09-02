@@ -214,6 +214,7 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -276,33 +277,47 @@ func (rv RouteVars) Get(key string) string {
 	return value
 }
 
+// flusher represents writers implementing the Flush method.
+type flusher interface {
+	Flush() error
+}
+
 // ResponseWriter implements http.ResponseWriter, and adds data compression
 // support.
 type responseWriter struct {
 	http.ResponseWriter
+	compressor io.Writer
 }
 
-// Write will compress data in the format specified in the Content-Encoding
-// header of the embedded http.ResponseWriter.
-func (w *responseWriter) Write(b []byte) (int, error) {
+func (w *responseWriter) setCompressor() {
 	switch format := w.Header().Get("Content-Encoding"); format {
 	case gzipCompression:
-		compressor := gzip.NewWriter(w.ResponseWriter)
-		defer compressor.Close()
-		return compressor.Write(b)
+		w.compressor = gzip.NewWriter(w.ResponseWriter)
 	case flateCompression:
-		compressor, _ := flate.NewWriter(w.ResponseWriter, 0)
-		defer compressor.Close()
-		return compressor.Write(b)
+		w.compressor, _ = flate.NewWriter(w.ResponseWriter, 0)
 	case "":
-		return w.ResponseWriter.Write(b)
+		w.compressor = w.ResponseWriter
 	default:
 		panic(fmt.Errorf("unsupported content encoding format %s", format))
 	}
 }
 
+// Write will compress data in the format specified in the Content-Encoding
+// header of the embedded http.ResponseWriter.
+func (w *responseWriter) Write(b []byte) (int, error) {
+	if w.compressor == nil {
+		w.setCompressor()
+	}
+	defer func() {
+		if flusher, ok := w.compressor.(flusher); ok {
+			flusher.Flush()
+		}
+	}()
+	return w.compressor.Write(b)
+}
+
 func newResponseWriter(w http.ResponseWriter) *responseWriter {
-	return &responseWriter{w}
+	return &responseWriter{ResponseWriter: w}
 }
 
 const varsKey = "__rst__vars"
