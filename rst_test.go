@@ -112,24 +112,27 @@ func newRequestResponse(method, url string, header http.Header, data io.Reader) 
 }
 
 func decompress(src io.ReadCloser, format string) ([]byte, error) {
-	var decompressor io.ReadCloser
-	var err error
+	var (
+		decompressor io.ReadCloser
+	)
 
 	switch format {
 	case "gzip":
-		decompressor, err = gzip.NewReader(src)
+		reader, err := gzip.NewReader(src)
+		if err != nil {
+			return nil, err
+		}
+		decompressor = reader
 	case "deflate":
 		decompressor = flate.NewReader(src)
 	default:
 		panic(fmt.Errorf("unknown format %s", format))
 	}
 
-	if err != nil {
-		return nil, err
-	}
-	defer src.Close()
 	defer decompressor.Close()
-	return ioutil.ReadAll(decompressor)
+	buffer := new(bytes.Buffer)
+	io.Copy(buffer, decompressor)
+	return buffer.Bytes(), nil
 }
 
 func TestMuxHeaders(t *testing.T) {
@@ -219,7 +222,7 @@ func TestResponseCompression(t *testing.T) {
 		t.Fatal("no Accept-Encoding header:", err)
 	}
 	canonical, _ := ioutil.ReadAll(rr0.resp.Body)
-	rr0.resp.Body.Close()
+	defer rr0.resp.Body.Close()
 
 	// Accept-Encoding: some-unknown-format
 	header.Set("Accept-Encoding", "some-unknown-format")
