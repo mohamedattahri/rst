@@ -244,9 +244,7 @@ func (f GetFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Vary", "Range")
-	if cr.From != 0 || cr.To != (cr.Total-1) {
-		w.Header().Set("Content-Range", cr.String())
-	}
+	w.Header().Set("Content-Range", cr.String())
 	writeResource(partial, w, r)
 }
 
