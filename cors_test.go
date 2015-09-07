@@ -27,7 +27,7 @@ func TestSimpleRequestDisabled(t *testing.T) {
 		}
 
 		for _, item := range testCORSHeaders {
-			if err := rr.TestHeader(item, ""); err != nil {
+			if err := rr.TestHasNoHeader(item); err != nil {
 				t.Fatal("CORS simple request:", err)
 			}
 		}
@@ -123,11 +123,11 @@ func TestPreflightRequestDefault(t *testing.T) {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
-	if err := rr.TestHeader("Access-Control-Allow-Methods", ""); err != nil {
+	if err := rr.TestHasNoHeader("Access-Control-Allow-Methods"); err != nil {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
-	if err := rr.TestHeader("Access-Control-Allow-Headers", ""); err != nil {
+	if err := rr.TestHasNoHeader("Access-Control-Allow-Headers"); err != nil {
 		t.Fatal("CORS preflighted request:", err)
 	}
 
@@ -178,7 +178,7 @@ func TestPreflightedRequestCustom(t *testing.T) {
 		t.Fatal("CORS simple request:", err)
 	}
 
-	if err := rr.TestHeader("Access-Control-Allow-Methods", ""); err != nil {
+	if err := rr.TestHasNoHeader("Access-Control-Allow-Methods"); err != nil {
 		t.Fatal("CORS preflighted request:", err)
 	}
 

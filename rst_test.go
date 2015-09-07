@@ -44,6 +44,13 @@ func (rr *requestResponse) TestHasHeader(key string) error {
 	return nil
 }
 
+func (rr *requestResponse) TestHasNoHeader(key string) error {
+	if err := rr.TestHasHeader(key); err == nil {
+		return fmt.Errorf("not expecting to find header %s", key)
+	}
+	return nil
+}
+
 func (rr *requestResponse) TestDateHeader(key string, wanted time.Time) error {
 	if rr.err != nil {
 		return rr.err
@@ -62,10 +69,17 @@ func (rr *requestResponse) TestHeader(key, value string) error {
 		return rr.err
 	}
 
-	if v := rr.resp.Header.Get(http.CanonicalHeaderKey(key)); v != value {
-		return fmt.Errorf("header %s Wanted: %s Got: %s", key, value, v)
+	if err := rr.TestHasHeader(key); err != nil {
+		return err
 	}
-	return nil
+
+	values := rr.resp.Header[http.CanonicalHeaderKey(key)]
+	for _, v := range values {
+		if v == value {
+			return nil
+		}
+	}
+	return fmt.Errorf("header %s Wanted: %s Got: %s", key, value, values)
 }
 
 func (rr *requestResponse) TestHeaderContains(key, value string) error {
@@ -73,10 +87,17 @@ func (rr *requestResponse) TestHeaderContains(key, value string) error {
 		return rr.err
 	}
 
-	if v := rr.resp.Header.Get(http.CanonicalHeaderKey(key)); !strings.Contains(v, value) {
-		return fmt.Errorf("header content %s Wanted: %s Got: %s", key, value, v)
+	if err := rr.TestHasHeader(key); err != nil {
+		return err
 	}
-	return nil
+
+	values := rr.resp.Header[http.CanonicalHeaderKey(key)]
+	for _, v := range values {
+		if strings.Contains(v, value) {
+			return nil
+		}
+	}
+	return fmt.Errorf("Could not find value \"%s\" in header \"%s\": \"%s\"", value, key, strings.Join(values, ", "))
 }
 
 func (rr *requestResponse) TestBody(reader io.Reader) error {
@@ -218,7 +239,7 @@ func TestResponseCompression(t *testing.T) {
 	if err := rr0.TestStatusCode(201); err != nil {
 		t.Fatal("POST request:", err)
 	}
-	if err := rr0.TestHeader("Content-Encoding", ""); err != nil {
+	if err := rr0.TestHasNoHeader("Content-Encoding"); err != nil {
 		t.Fatal("no Accept-Encoding header:", err)
 	}
 	canonical, _ := ioutil.ReadAll(rr0.resp.Body)
@@ -230,7 +251,7 @@ func TestResponseCompression(t *testing.T) {
 	if err := rrUnknownFormat.TestStatusCode(201); err != nil {
 		t.Fatal("POST request:", err)
 	}
-	if err := rrUnknownFormat.TestHeader("Content-Encoding", ""); err != nil {
+	if err := rrUnknownFormat.TestHasNoHeader("Content-Encoding"); err != nil {
 		t.Fatal("random Accept-Encoding value:", err)
 	}
 	if err := rrUnknownFormat.TestBody(bytes.NewReader(canonical)); err != nil {
