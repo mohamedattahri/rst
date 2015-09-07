@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+// noContent is used to run ResponseWriter.Write even when there's not data to
+// write.
+var noContent = []byte{}
+
 /*
 Resource represents a resource exposed on a REST service using an Endpoint.
 
@@ -151,6 +155,7 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 
 	if len(b) == 0 {
 		w.WriteHeader(http.StatusNoContent)
+		w.Write(noContent) // Allowing an override of ResponseWriter to work.
 		return
 	}
 
