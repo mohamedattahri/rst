@@ -130,7 +130,7 @@ func (h *accessControlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	// Adding a vary if an origin is specified in the response.
 	defer func() {
 		if allowed := w.Header().Get("Access-Control-Allow-Origin"); allowed != "" && allowed != "*" {
-			w.Header().Add("Vary", "Origin")
+			addVary(w.Header(), "Origin")
 		}
 	}()
 

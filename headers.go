@@ -7,11 +7,25 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/http"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 )
+
+// addVary adds value to the list of values of the "Vary" header if it's not
+// already there.
+func addVary(header http.Header, value string) {
+	if values, ok := header[http.CanonicalHeaderKey("Vary")]; ok {
+		for _, v := range values {
+			if v == value {
+				return
+			}
+		}
+	}
+	header.Add("Vary", value)
+}
 
 // AcceptClause represents a clause in an HTTP Accept header.
 type AcceptClause struct {

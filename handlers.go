@@ -118,7 +118,7 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Headers
-	w.Header().Add("Vary", "Accept")
+	addVary(w.Header(), "Accept")
 	w.Header().Set("Last-Modified", resource.LastModified().UTC().Format(rfc1123))
 	w.Header().Set("ETag", resource.ETag())
 	w.Header().Set("Expires", time.Now().Add(resource.TTL()).UTC().Format(rfc1123))
@@ -144,7 +144,6 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 
 	if compression := getCompressionFormat(b, r); compression != "" {
 		w.Header().Set("Content-Encoding", compression)
-		w.Header().Add("Vary", "Accept-Encoding")
 	}
 
 	if strings.ToUpper(r.Method) == Post {
@@ -248,7 +247,7 @@ func (f GetFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Vary", "Range")
+	addVary(w.Header(), "Range")
 	w.Header().Set("Content-Range", cr.String())
 	writeResource(partial, w, r)
 }

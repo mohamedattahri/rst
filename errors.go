@@ -142,7 +142,7 @@ func RequestedRangeNotSatisfiable(cr *ContentRange) *Error {
 		"The requested range is not available and cannot be served.",
 	)
 	err.Header.Set("Content-Range", cr.String())
-	err.Header.Add("Vary", "Range")
+	addVary(err.Header, "Range")
 	return err
 }
 
@@ -262,7 +262,7 @@ func (e *Error) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Del("Expires")
 
 	w.Header().Set("Content-Type", ct)
-	w.Header().Add("Vary", "Accept")
+	addVary(w.Header(), "Accept")
 	if e.Code != http.StatusNotFound && e.Code != http.StatusGone {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	}

@@ -217,7 +217,7 @@ func TestGetInvalidRangeHandler(t *testing.T) {
 		if err := rr.TestHeader("Content-Type", "application/json; charset=utf-8"); err != nil {
 			t.Fatal(err)
 		}
-		if err := rr.TestHeader("Content-Range", ""); err != nil {
+		if err := rr.TestHasNoHeader("Content-Range"); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -297,7 +297,7 @@ func TestPartialGetUnsupportedUnit(t *testing.T) {
 		if err := rr.TestStatusCode(http.StatusOK); err != nil {
 			t.Fatal(err)
 		}
-		if err := rr.TestHeader("Content-Range", ""); err != nil {
+		if err := rr.TestHasNoHeader("Content-Range"); err != nil {
 			t.Fatal(err)
 		}
 	}
