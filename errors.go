@@ -264,7 +264,7 @@ func (e *Error) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", ct)
 	w.Header().Add("Vary", "Accept")
 	if e.Code != http.StatusNotFound && e.Code != http.StatusGone {
-		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	}
 	w.WriteHeader(e.Code)
 	w.Write(b)
