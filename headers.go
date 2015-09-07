@@ -17,6 +17,7 @@ import (
 // addVary adds value to the list of values of the "Vary" header if it's not
 // already there.
 func addVary(header http.Header, value string) {
+	value = http.CanonicalHeaderKey(value)
 	if values, ok := header[http.CanonicalHeaderKey("Vary")]; ok {
 		for _, v := range values {
 			if v == value {
