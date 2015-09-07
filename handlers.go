@@ -363,7 +363,7 @@ func (f PostFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if location != "" {
 		// TODO: make sure the URI is a fully qualified URL
-		w.Header().Add("Location", location)
+		w.Header().Set("Location", location)
 	}
 
 	if resource == nil {
