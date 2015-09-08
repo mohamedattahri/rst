@@ -3,7 +3,7 @@ package rst
 import (
 	"compress/flate"
 	"compress/gzip"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -21,6 +21,10 @@ var (
 	// The current default value is the one used by Akamai, and falls within the
 	// range recommended by Google.
 	CompressionThreshold = 860 // bytes
+
+	// errUnknownCompressionFormat is returned when the format of compression
+	// required in unknown.
+	errUnknownCompressionFormat = errors.New("unsupported compression format")
 
 	// gZipCompressorPool allows rst to recyle gzip writers.
 	gZipCompressorPool = sync.Pool{
@@ -59,19 +63,25 @@ func getCompressionFormat(b []byte, r *http.Request) string {
 type compressor interface {
 	io.Writer
 	Flush() error
+	Reset(io.Writer)
 }
 
 // getCompressor returns a writer that can compress data written to it.
-func getCompressor(format string, dest io.Writer) (compressor, error) {
+func compress(format string, dest io.Writer, b []byte) (int, error) {
+	var writer compressor
 	switch format {
 	case gzipCompression:
-		writer := gZipCompressorPool.Get().(*gzip.Writer)
-		writer.Reset(dest)
-		return writer, nil
+		writer = gZipCompressorPool.Get().(*gzip.Writer)
+		defer gZipCompressorPool.Put(writer)
 	case flateCompression:
-		writer := flateCompressorPool.Get().(*flate.Writer)
-		writer.Reset(dest)
-		return writer, nil
+		writer = flateCompressorPool.Get().(*flate.Writer)
+		defer flateCompressorPool.Put(writer)
+	default:
+		return 0, errUnknownCompressionFormat
 	}
-	return nil, fmt.Errorf("unsupported content encoding format %s", format)
+
+	writer.Reset(dest)
+	n, err := writer.Write(b)
+	writer.Flush()
+	return n, err
 }

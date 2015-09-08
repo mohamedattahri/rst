@@ -254,7 +254,7 @@ type responseWriter struct {
 }
 
 // Flush sends content down the transport.
-func (rw *responseWriter) Flush() {
+func (rw *responseWriter) flush() {
 	if rw.wfl == nil {
 		return
 	}
@@ -273,16 +273,11 @@ func (rw *responseWriter) Flush() {
 // Write will compress data in the format specified in the Content-Encoding
 // header of the embedded http.ResponseWriter.
 func (rw *responseWriter) Write(b []byte) (int, error) {
-	if rw.wfl == nil {
-		c, err := getCompressor(rw.ResponseWriter.Header().Get("Content-Encoding"), rw.ResponseWriter)
-		if err != nil {
-			rw.wfl = rw.ResponseWriter
-		} else {
-			rw.wfl = c
-		}
+	n, err := compress(rw.ResponseWriter.Header().Get("Content-Encoding"), rw.ResponseWriter, b)
+	if err == errUnknownCompressionFormat {
+		return rw.ResponseWriter.Write(b)
 	}
-	defer rw.Flush()
-	return rw.wfl.Write(b)
+	return n, err
 }
 
 // newResponseWriter returns an enhanced implementation of http.ResponseWriter.
