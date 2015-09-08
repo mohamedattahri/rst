@@ -211,8 +211,6 @@ Preflighter interface in your endpoint.
 package rst
 
 import (
-	"compress/flate"
-	"compress/gzip"
 	"fmt"
 	"io"
 	"log"
@@ -239,35 +237,6 @@ const (
 	Delete  = "DELETE"
 )
 
-const (
-	gzipCompression  string = "gzip"
-	flateCompression        = "deflate"
-)
-
-// CompressionThreshold is the minimal length that the body of a response must
-// reach before compression is enabled.
-// The current default value is the one used by Akamai, and falls within the
-// range recommended by Google.
-var CompressionThreshold = 860 // bytes
-
-// getCompressionFormat returns the compression for that will be used for b as
-// a payload in the response to r. The returned string is either empty, gzip, or
-// deflate.
-func getCompressionFormat(b []byte, r *http.Request) string {
-	if b == nil || len(b) < CompressionThreshold {
-		return ""
-	}
-
-	encoding := r.Header.Get("Accept-Encoding")
-	if strings.Contains(encoding, gzipCompression) {
-		return gzipCompression
-	}
-	if strings.Contains(encoding, flateCompression) {
-		return flateCompression
-	}
-	return ""
-}
-
 // RouteVars represents the variables extracted by the router from a URL.
 type RouteVars map[string]string
 
@@ -277,45 +246,46 @@ func (rv RouteVars) Get(key string) string {
 	return value
 }
 
-// flusher represents writers implementing the Flush method.
-type flusher interface {
-	Flush() error
-}
-
 // ResponseWriter implements http.ResponseWriter, and adds data compression
 // support.
 type responseWriter struct {
 	http.ResponseWriter
-	compressor io.Writer
+	wfl io.Writer
 }
 
-func (w *responseWriter) setCompressor() {
-	switch format := w.Header().Get("Content-Encoding"); format {
-	case gzipCompression:
-		w.compressor = gzip.NewWriter(w.ResponseWriter)
-	case flateCompression:
-		w.compressor, _ = flate.NewWriter(w.ResponseWriter, 0)
-	case "":
-		w.compressor = w.ResponseWriter
-	default:
-		panic(fmt.Errorf("unsupported content encoding format %s", format))
+// Flush sends content down the transport.
+func (rw *responseWriter) Flush() {
+	if rw.wfl == nil {
+		return
+	}
+
+	if compressor, ok := rw.wfl.(compressor); ok {
+		compressor.Flush()
+		return
+	}
+
+	if flusher, ok := rw.wfl.(http.Flusher); ok {
+		flusher.Flush()
+		return
 	}
 }
 
 // Write will compress data in the format specified in the Content-Encoding
 // header of the embedded http.ResponseWriter.
-func (w *responseWriter) Write(b []byte) (int, error) {
-	if w.compressor == nil {
-		w.setCompressor()
-	}
-	defer func() {
-		if flusher, ok := w.compressor.(flusher); ok {
-			flusher.Flush()
+func (rw *responseWriter) Write(b []byte) (int, error) {
+	if rw.wfl == nil {
+		c, err := getCompressor(rw.ResponseWriter.Header().Get("Content-Encoding"), rw.ResponseWriter)
+		if err != nil {
+			rw.wfl = rw.ResponseWriter
+		} else {
+			rw.wfl = c
 		}
-	}()
-	return w.compressor.Write(b)
+	}
+	defer rw.Flush()
+	return rw.wfl.Write(b)
 }
 
+// newResponseWriter returns an enhanced implementation of http.ResponseWriter.
 func newResponseWriter(w http.ResponseWriter) *responseWriter {
 	return &responseWriter{ResponseWriter: w}
 }
@@ -384,7 +354,7 @@ func (s *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if !s.Debug {
 				t := InternalServerError(reason, "", true)
 				s.Logger.Println(t.String())
-				reason = "internal server error"
+				reason = http.StatusText(http.StatusInternalServerError)
 			}
 			InternalServerError(reason, "", s.Debug).ServeHTTP(w, r)
 		}
@@ -604,7 +574,6 @@ func (e *Envelope) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if compression := getCompressionFormat(b, r); compression != "" {
 		w.Header().Set("Content-Encoding", compression)
-		w.Header().Add("Vary", "Accept-Encoding")
 	}
 
 	if strings.ToUpper(r.Method) == Post {

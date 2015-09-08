@@ -146,6 +146,7 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 
 	if compression := getCompressionFormat(b, r); compression != "" {
 		w.Header().Set("Content-Encoding", compression)
+		addVary(w.Header(), "Accept-Encoding")
 	}
 
 	if strings.ToUpper(r.Method) == Post {

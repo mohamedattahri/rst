@@ -1,10 +1,37 @@
 package rst
 
 import (
+	"bytes"
 	"fmt"
 	"math"
+	"net/http"
 	"testing"
 )
+
+func TestAddVary(t *testing.T) {
+	var compareFn = func(h, o http.Header) {
+		bh, bo := new(bytes.Buffer), new(bytes.Buffer)
+		h.Write(bh)
+		o.Write(bo)
+
+		if bh.String() != bo.String() {
+			t.Fatal("addVary did not return the expected result.")
+		}
+	}
+
+	h := make(http.Header)
+	addVary(h, "Accept")
+	addVary(h, "Range")
+	addVary(h, "Accept")
+	addVary(h, "Accept-Encoding")
+
+	o := make(http.Header)
+	addVary(o, "Accept")
+	addVary(o, "Range")
+	addVary(o, "Accept-Encoding")
+
+	compareFn(h, o)
+}
 
 func TestParseRange(t *testing.T) {
 	var test = func(raw, unit string, from, to uint64) {
