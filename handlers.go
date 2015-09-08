@@ -105,6 +105,7 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 	if t, err := time.Parse(rfc1123, r.Header.Get("If-Modified-Since")); err == nil {
 		if t.Sub(resource.LastModified()).Seconds() >= 0 {
 			w.WriteHeader(http.StatusNotModified)
+			w.Write(noContent)
 			return
 		}
 	}
@@ -113,6 +114,7 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 	for _, t := range strings.Split(r.Header.Get("If-None-Match"), ";") {
 		if t == resource.ETag() {
 			w.WriteHeader(http.StatusNotModified)
+			w.Write(noContent)
 			return
 		}
 	}
@@ -165,6 +167,7 @@ func writeResource(resource Resource, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.ToUpper(r.Method) == Head {
+		w.Write(noContent)
 		return
 	}
 	w.Write(b)
@@ -206,6 +209,7 @@ func (f GetFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if resource == nil {
 		w.WriteHeader(http.StatusNoContent)
+		w.Write(noContent)
 		return
 	}
 
@@ -291,6 +295,7 @@ func (f PatchFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	if resource == nil {
+		w.Write(noContent)
 		return
 	}
 	writeResource(resource, w, r)
@@ -331,6 +336,7 @@ func (f PutFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	if resource == nil {
+		w.Write(noContent)
 		return
 	}
 	writeResource(resource, w, r)
@@ -372,6 +378,7 @@ func (f PostFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if resource == nil {
 		w.WriteHeader(http.StatusCreated)
+		w.Write(noContent)
 		return
 	}
 	writeResource(resource, w, r)
@@ -392,12 +399,14 @@ func (f DeleteFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+	w.Write(noContent)
 }
 
 // OptionsHandler returns a handler that serves responses to OPTIONS requests
 // issued to the resource exposed by the given endpoint.
 func optionsHandler(endpoint Endpoint) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer w.Write(noContent)
 		if r.Method != Options {
 			return
 		}
